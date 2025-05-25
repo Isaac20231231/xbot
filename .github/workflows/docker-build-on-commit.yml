@@ -55,6 +55,6 @@ jobs:
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
-            ${{ vars.DOCKERHUB_USERNAME }}/xybot:latest
-          cache-from: type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/xybot:latest
+            ${{ vars.DOCKERHUB_USERNAME }}/xbot:latest
+          cache-from: type=registry,ref=${{ vars.DOCKERHUB_USERNAME }}/xbot:latest
           cache-to: type=inline,mode=max

@@ -7,6 +7,7 @@ import time
 import tomllib
 from pathlib import Path
 from datetime import datetime, timedelta
+import logging
 
 from loguru import logger
 
@@ -20,6 +21,7 @@ from utils.plugin_manager import plugin_manager
 from utils.xybot import XYBot
 from utils.notification_service import init_notification_service, get_notification_service
 import websockets  # 如果未导入，确保添加这行
+import redis.asyncio as aioredis  # 新增
 
 # 创建消息计数器实例
 message_counter = get_message_counter()
@@ -113,6 +115,20 @@ except ImportError as e:
     # 创建一个空的状态更新函数
     def update_bot_status(status, details=None):
         logger.debug(f"管理后台模块未正确导入，状态更新被忽略: {status}")
+
+
+NUM_CONSUMERS = 1  # 可根据需要调整并发消费者数量
+QUEUE_NAME = 'xxxbot'  # 自定义队列名
+
+async def message_consumer(xybot, redis, message_db):
+    while True:
+        _, msg_json = await redis.blpop(QUEUE_NAME)
+        message = json.loads(msg_json)
+        logger.info(f"消息已出队并开始处理，队列: {QUEUE_NAME}，消息ID: {message.get('MsgId') or message.get('msgId')}")
+        try:
+            await xybot.process_message(message)
+        except Exception as e:
+            logger.error(f"消息处理异常: {e}")
 
 
 async def bot_core():
@@ -754,12 +770,22 @@ async def bot_core():
         ws_url = ws_url.rstrip("/") + f"/{wxid}"
     
     logger.info(f"WebSocket 消息推送地址: {ws_url}")
-    await listen_ws_messages(xybot, ws_url)
+
+    # 初始化 Redis 连接
+    redis_url = f"redis://{api_config.get('redis-host', '127.0.0.1')}:{api_config.get('redis-port', 6379)}"
+    redis = aioredis.from_url(redis_url, decode_responses=True)
+
+    # 启动消息消费者
+    for _ in range(NUM_CONSUMERS):
+        asyncio.create_task(message_consumer(xybot, redis, message_db))
+
+    # 启动 WebSocket 消息监听
+    await listen_ws_messages(xybot, ws_url, redis, message_db)
 
     # 返回机器人实例（此处不会执行到，因为上面的无限循环）
     return xybot
 
-async def listen_ws_messages(xybot, ws_url):
+async def listen_ws_messages(xybot, ws_url, redis, message_db):
     """WebSocket 客户端，实时接收消息并处理，自动重连，依赖官方ping/pong心跳机制"""
     import traceback
     import websockets
@@ -788,7 +814,18 @@ async def listen_ws_messages(xybot, ws_url):
                             if isinstance(data, dict) and "AddMsgs" in data:
                                 messages = data["AddMsgs"]
                                 for message in messages:
-                                    asyncio.create_task(xybot.process_message(message))
+                                    # 本地存储
+                                    await message_db.save_message(
+                                        msg_id=message.get("MsgId") or message.get("msgId") or 0,
+                                        sender_wxid=message.get("FromUserName", {}).get("string", ""),
+                                        from_wxid=message.get("ToUserName", {}).get("string", ""),
+                                        msg_type=message.get("MsgType") or message.get("category") or 0,
+                                        content=message.get("Content", {}).get("string", ""),
+                                        is_group=False  # 可根据业务调整
+                                    )
+                                    # 入队
+                                    await redis.rpush(QUEUE_NAME, json.dumps(message, ensure_ascii=False))
+                                    logger.info(f"消息已入队到队列 {QUEUE_NAME}，消息ID: {message.get('MsgId') or message.get('msgId')}")
                             else:
                                 ws_msg = data
                                 ws_msgs = [ws_msg] if isinstance(ws_msg, dict) else ws_msg
@@ -809,7 +846,18 @@ async def listen_ws_messages(xybot, ws_url):
                                         "MsgSeq": msg.get("msgSeq", 0)
                                     }
                                     logger.info(f"ws消息适配为AddMsgs: {json.dumps(addmsg, ensure_ascii=False)}")
-                                    asyncio.create_task(xybot.process_message(addmsg))
+                                    # 本地存储
+                                    await message_db.save_message(
+                                        msg_id=addmsg.get("MsgId") or 0,
+                                        sender_wxid=addmsg.get("FromUserName", {}).get("string", ""),
+                                        from_wxid=addmsg.get("ToUserName", {}).get("string", ""),
+                                        msg_type=addmsg.get("MsgType") or 0,
+                                        content=addmsg.get("Content", {}).get("string", ""),
+                                        is_group=False
+                                    )
+                                    # 入队
+                                    await redis.rpush(QUEUE_NAME, json.dumps(addmsg, ensure_ascii=False))
+                                    logger.info(f"消息已入队到队列 {QUEUE_NAME}，消息ID: {addmsg.get('MsgId') or addmsg.get('msgId')}")
                         except json.JSONDecodeError:
                             msg_preview = msg[:100] + "..." if len(msg) > 100 else msg
                             if not msg.strip():

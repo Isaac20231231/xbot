@@ -90,7 +90,7 @@ class ToolMixin(WechatAPIClientBase):
             timeout = aiohttp.ClientTimeout(total=300)  # 5分钟
 
             json_param = {"Wxid": self.wxid, "AttachId": attach_id}
-            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/DownloadAttach', json=json_param,timeout=timeout)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/DownloadFile', json=json_param,timeout=timeout)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

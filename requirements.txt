@@ -58,3 +58,9 @@ requests-html>=0.10.0
 
 # 新增 websockets 依赖
 websockets>=10.0
+
+# 分布式异步队列
+redis>=4.2.0
+
+# 添加 celery[redis] 依赖，支持 Celery + Redis 分布式任务队列
+celery[redis]>=5.3.0

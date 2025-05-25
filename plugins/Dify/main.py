@@ -64,7 +64,7 @@ class ModelConfig:
 class Dify(PluginBase):
     description = "Dify插件"
     author = "老夏的金库"
-    version = "1.5.1"  # 更新版本号 - 增加图片引用功能
+    version = "1.6.1"  # 更新版本号 - 增加图片引用功能
     is_ai_platform = True  # 标记为 AI 平台插件
 
     def __init__(self):
@@ -529,6 +529,44 @@ class Dify(PluginBase):
 
         # 如果检测到唤醒词，处理唤醒词请求
         if wakeup_detected and wakeup_model and processed_wakeup_query:
+            # 修复：如果是引用消息且有 image_md5，优先查找并上传图片
+            files = []
+            if message.get("Quote") and (message.get("ImageMD5") or (message.get("Quote", {}).get("MsgType") == 3)):
+                image_md5 = message.get("ImageMD5")
+                if not image_md5:
+                    quote_info = message.get("Quote", {})
+                    quoted_content = quote_info.get("Content", "")
+                    if "<?xml" in quoted_content and "<img" in quoted_content:
+                        try:
+                            import xml.etree.ElementTree as ET
+                            root = ET.fromstring(quoted_content)
+                            img_element = root.find('img')
+                            if img_element is not None:
+                                image_md5 = img_element.get('md5')
+                        except Exception as e:
+                            logger.error(f"解析引用图片消息XML失败: {e}")
+                if image_md5:
+                    try:
+                        logger.info(f"唤醒词引用消息：尝试根据MD5查找图片: {image_md5}")
+                        image_content = await self.find_image_by_md5(image_md5)
+                        if image_content:
+                            logger.info(f"根据MD5找到图片，大小: {len(image_content)} 字节")
+                            file_id = await self.upload_file_to_dify(
+                                image_content,
+                                f"image_{int(time.time())}.jpg",
+                                "image/jpeg",
+                                group_id,
+                                model_config=wakeup_model
+                            )
+                            if file_id:
+                                logger.info(f"唤醒词引用图片上传成功，文件ID: {file_id}")
+                                files = [file_id]
+                            else:
+                                logger.error("唤醒词引用图片上传失败")
+                        else:
+                            logger.warning(f"未找到MD5为 {image_md5} 的图片")
+                    except Exception as e:
+                        logger.error(f"唤醒词引用图片处理失败: {e}")
             if wakeup_model.api_key:  # 检查唤醒词对应模型的API密钥
                 if await self._check_point(bot, message, wakeup_model):  # 传递模型到_check_point
                     logger.info(f"使用唤醒词对应模型处理请求")
@@ -826,8 +864,6 @@ class Dify(PluginBase):
                     if content.startswith(f'@{robot_name}'):
                         is_at_bot = True
                         break
-
-                    # 特殊处理：检查是否是@小小x这样的格式（可能有空格）
                     if content.lower().startswith(f'@{robot_name.lower()}'):
                         is_at_bot = True
                         break
@@ -836,72 +872,73 @@ class Dify(PluginBase):
             if is_at and is_at_bot:
                 # 处理@机器人的引用消息
                 query = content
-
                 # 检查是否以@开头，如果是，则移除@部分
                 if content.startswith('@'):
-                    # 先检查是否是@机器人
                     at_bot_prefix = None
                     for robot_name in self.robot_names:
                         if content.startswith(f'@{robot_name}'):
                             at_bot_prefix = f'@{robot_name}'
                             break
-
                     if at_bot_prefix:
-                        # 如果是@机器人，移除@机器人部分
                         query = content[len(at_bot_prefix):].strip()
                         logger.debug(f"移除@{at_bot_prefix}后的查询内容: {query}")
                     else:
-                        # 如果不是@机器人，则尝试找第一个空格
                         space_index = content.find(' ')
                         if space_index > 0:
-                            # 保留第一个空格后面的所有内容
                             query = content[space_index+1:].strip()
                             logger.debug(f"移除@前缀后的查询内容: {query}")
                         else:
-                            # 如果没有空格，尝试提取@后面的内容
-                            # 找到第一个非空格字符的位置
                             for i in range(1, len(content)):
                                 if content[i] != '@' and content[i] != ' ':
                                     query = content[i:].strip()
                                     logger.debug(f"提取@后面的内容: {query}")
                                     break
                             else:
-                                # 如果整个内容都是@，将query设为空
                                 query = ""
                 else:
-                    # 如果不是以@开头，则尝试移除@机器人名称
                     for robot_name in self.robot_names:
                         query = query.replace(f"@{robot_name}", "").strip()
 
-                # 如果没有内容，则使用引用的内容
+                # 优化：如果引用的是图片，不拼接 (引用消息: ...)
                 if not query:
-                    query = f"请回复这条消息: '{quoted_content}'"
+                    if image_md5:
+                        query = ""
+                    else:
+                        query = f"请回复这条消息: '{quoted_content}'"
                 else:
-                    query = f"{query} (引用消息: '{quoted_content}')"
+                    if not image_md5:
+                        query = f"{query} (引用消息: '{quoted_content}')"
+                    # 如果是图片引用，query 保持原内容
 
-                # 检查是否有唤醒词或触发词
                 model, processed_query, is_switch = self.get_model_from_message(query, user_wxid)
 
                 if is_switch:
                     model_name = next(name for name, config in self.models.items() if config == model)
-                    await bot.send_at_message(
-                        message["FromWxid"],
-                        f"\n已切换到{model_name.upper()}模型，将一直使用该模型直到下次切换。",
-                        [user_wxid]
-                    )
+                    if message.get("IsGroup"):
+                        await bot.send_at_message(
+                            message["FromWxid"],
+                            f"已切换到{model_name.upper()}模型，将一直使用该模型直到下次切换。",
+                            [user_wxid]
+                        )
+                    else:
+                        await bot.send_text_message(
+                            message["FromWxid"],
+                            f"已切换到{model_name.upper()}模型，将一直使用该模型直到下次切换。"
+                        )
                     return False
 
                 # 检查模型API密钥是否可用
                 if not model.api_key:
                     model_name = next((name for name, config in self.models.items() if config == model), '未知')
                     logger.error(f"所选模型 '{model_name}' 的API密钥未配置")
-                    await bot.send_at_message(message["FromWxid"], f"\n此模型API密钥未配置，请联系管理员", [user_wxid])
+                    if message.get("IsGroup"):
+                        await bot.send_at_message(message["FromWxid"], "此模型API密钥未配置，请联系管理员", [user_wxid])
+                    else:
+                        await bot.send_text_message(message["FromWxid"], "此模型API密钥未配置，请联系管理员")
                     return False
 
                 # 检查是否有图片
                 files = []
-
-                # 优先检查引用消息中的图片MD5
                 if image_md5:
                     try:
                         logger.info(f"尝试根据MD5查找图片: {image_md5}")
@@ -912,7 +949,7 @@ class Dify(PluginBase):
                                 image_content,
                                 f"image_{int(time.time())}.jpg",  # 生成一个有效的文件名
                                 "image/jpeg",
-                                group_id,
+                                message["FromWxid"],
                                 model_config=model
                             )
                             if file_id:
@@ -925,43 +962,38 @@ class Dify(PluginBase):
                     except Exception as e:
                         logger.error(f"处理引用图片失败: {e}")
 
-                # 如果没有找到引用的图片，检查最近的缓存图片
-                if not files:
-                    image_content = await self.get_cached_image(group_id)
-                    if image_content:
-                        try:
-                            logger.debug("引用消息中发现最近的图片，准备上传到 Dify")
-                            file_id = await self.upload_file_to_dify(
-                                image_content,
-                                f"image_{int(time.time())}.jpg",  # 生成一个有效的文件名
-                                "image/jpeg",
-                                group_id,
-                                model_config=model
-                            )
-                            if file_id:
-                                logger.debug(f"图片上传成功，文件ID: {file_id}")
-                                files = [file_id]
-                            else:
-                                logger.error("图片上传失败")
-                        except Exception as e:
-                            logger.error(f"处理图片失败: {e}")
+                # 如果没有内容，则使用引用的内容或默认提示
+                if not content or content.strip() == "":
+                    # 如果是图片消息，使用特殊提示
+                    if image_md5 or quoted_msg_type == 3:
+                        processed_query = f"请分析这张图片"
+                    else:
+                        processed_query = f"请回复这条消息: '{quoted_content}'"
 
                 if await self._check_point(bot, message, model):
-                    logger.info(f"引用消息使用模型 '{next((name for name, config in self.models.items() if config == model), '未知')}' 处理请求")
+                    logger.info(f"XML引用消息使用模型 '{next((name for name, config in self.models.items() if config == model), '未知')}' 处理请求")
                     await self.dify(bot, message, processed_query, files=files, specific_model=model)
+                    return False
                 else:
-                    logger.info(f"积分检查失败，无法处理引用消息请求")
+                    logger.info(f"积分检查失败，无法处理XML引用消息请求")
+                    return True
+            else:
+                logger.info("Dify: XML引用消息中没有@机器人，忽略该消息")
+                return True
         else:
             # 私聊引用消息处理
             user_wxid = message["SenderWxid"]
-
-            # 如果没有内容，则使用引用的内容
+            # 优化：如果引用的是图片，不拼接 (引用消息: ...)
             if not content:
-                query = f"请回复这条消息: '{quoted_content}'"
+                if image_md5:
+                    query = ""
+                else:
+                    query = f"请回复这条消息: '{quoted_content}'"
             else:
-                query = f"{content} (引用消息: '{quoted_content}')"
-
-            # 检查是否有唤醒词或触发词
+                if not image_md5:
+                    query = f"{content} (引用消息: '{quoted_content}')"
+                else:
+                    query = content
             model, processed_query, is_switch = self.get_model_from_message(query, user_wxid)
 
             if is_switch:
@@ -981,8 +1013,6 @@ class Dify(PluginBase):
 
             # 检查是否有图片
             files = []
-
-            # 优先检查引用消息中的图片MD5
             if image_md5:
                 try:
                     logger.info(f"尝试根据MD5查找图片: {image_md5}")
@@ -1006,34 +1036,12 @@ class Dify(PluginBase):
                 except Exception as e:
                     logger.error(f"处理引用图片失败: {e}")
 
-            # 如果没有找到引用的图片，检查最近的缓存图片
-            if not files:
-                image_content = await self.get_cached_image(message["FromWxid"])
-                if image_content:
-                    try:
-                        logger.debug("引用消息中发现最近的图片，准备上传到 Dify")
-                        file_id = await self.upload_file_to_dify(
-                            image_content,
-                            f"image_{int(time.time())}.jpg",  # 生成一个有效的文件名
-                            "image/jpeg",
-                            message["FromWxid"],
-                            model_config=model
-                        )
-                        if file_id:
-                            logger.debug(f"图片上传成功，文件ID: {file_id}")
-                            files = [file_id]
-                        else:
-                            logger.error("图片上传失败")
-                    except Exception as e:
-                        logger.error(f"处理图片失败: {e}")
-
             if await self._check_point(bot, message, model):
                 logger.info(f"私聊引用消息使用模型 '{next((name for name, config in self.models.items() if config == model), '未知')}' 处理请求")
                 await self.dify(bot, message, processed_query, files=files, specific_model=model)
             else:
                 logger.info(f"积分检查失败，无法处理引用消息请求")
-
-        return False
+            return False
 
     @on_voice_message(priority=20)
     async def handle_voice(self, bot: WechatAPIClient, message: dict):

@@ -555,25 +555,25 @@ class XYBot:
         # 只做必要的字段映射，保持原有处理逻辑不变
         if "msgId" in message and "MsgId" not in message:
             message["MsgId"] = message.get("msgId")
-        
+
         if "category" in message and "MsgType" not in message:
             message["MsgType"] = message.get("category")
-            
+
         if "content" in message and not message.get("Content"):
             message["Content"] = {"string": message.get("content", "")}
-            
+
         if "sender" in message and isinstance(message["sender"], dict):
             if "id" in message["sender"]:
                 message["FromWxid"] = message["sender"]["id"]
                 message["FromUserName"] = {"string": message["sender"]["id"]}
-                
+
         if "ToWxid" not in message:
             message["ToWxid"] = ""
-            
+
         # 如果缺少MsgSource，提供一个简单的空结构避免错误
         if "MsgSource" not in message:
             message["MsgSource"] = "<msgsource></msgsource>"
-        
+
         # 保留原有的消息处理逻辑
         msg_type = message.get("MsgType")
 
@@ -1323,9 +1323,152 @@ class XYBot:
 
         if self.ignore_check(message["FromWxid"], message["SenderWxid"]):
             if self.ignore_protection or not protector.check(14400):
+                # 在发送给插件之前，先检查引用消息中的触发词/唤醒词
+                logger.info(f"开始检查引用消息触发词: {message.get('Content', '')}")
+                try:
+                    if await self.check_quote_message_triggers(message):
+                        # 如果触发词检查已经处理了消息，就不再发送给其他插件
+                        logger.info("引用消息已被触发词处理，跳过通用引用消息处理")
+                        return
+                    else:
+                        logger.info("引用消息未匹配到任何触发词，继续通用处理")
+                except Exception as e:
+                    logger.error(f"检查引用消息触发词时发生异常: {e}")
+
+                # 如果没有触发词匹配，继续正常的引用消息处理流程
                 await EventManager.emit("quote_message", self.bot, message)
             else:
                 logger.warning("风控保护: 新设备登录后4小时内请挂机")
+
+    async def check_quote_message_triggers(self, message: Dict[str, Any]) -> bool:
+        """检查引用消息中的触发词/唤醒词，并调用相应插件处理
+
+        Args:
+            message: 引用消息字典
+
+        Returns:
+            bool: 如果消息被某个插件处理了，返回True；否则返回False
+        """
+        from utils.plugin_manager import plugin_manager
+
+        content = message.get("Content", "").strip()
+        if not content:
+            return False
+
+        logger.debug(f"检查引用消息中的触发词: {content}")
+
+        # 遍历所有已加载的插件，按优先级排序
+        plugins_by_priority = {}
+        for plugin_name, plugin in plugin_manager.plugins.items():
+            # 获取插件的优先级
+            priority = 50  # 默认优先级
+
+            # 检查插件是否有处理引用消息的方法
+            for method_name in dir(plugin):
+                method = getattr(plugin, method_name)
+                if hasattr(method, "_event_type") and method._event_type == "quote_message":
+                    # 如果有，获取其优先级
+                    priority = getattr(method, "_priority", 50)
+                    break
+
+            # 将插件添加到对应优先级的列表中
+            if priority not in plugins_by_priority:
+                plugins_by_priority[priority] = []
+            plugins_by_priority[priority].append((plugin_name, plugin))
+
+        # 按优先级从高到低排序
+        priorities = sorted(plugins_by_priority.keys(), reverse=True)
+
+        # 检查每个插件的触发词/唤醒词
+        for priority in priorities:
+            for plugin_name, plugin in plugins_by_priority[priority]:
+                # 1. 检查插件是否有唤醒词属性
+                if hasattr(plugin, "wakeup_words") and plugin.wakeup_words:
+                    for wakeup_word in plugin.wakeup_words:
+                        if content.lower().startswith(wakeup_word.lower()) or f" {wakeup_word.lower()}" in content.lower():
+                            logger.info(f"引用消息中检测到插件 {plugin_name} 的唤醒词: {wakeup_word}")
+                            # 触发该插件的引用消息处理方法
+                            for method_name in dir(plugin):
+                                method = getattr(plugin, method_name)
+                                if hasattr(method, "_event_type") and method._event_type == "quote_message":
+                                    result = await method(self.bot, message)
+                                    if result is False:
+                                        return True
+                                    break
+
+                # 2. 检查Dify插件的特殊处理
+                if (plugin_name == "Dify" and hasattr(plugin, "wakeup_word_to_model")
+                    and plugin.wakeup_word_to_model):
+                    for wakeup_word in plugin.wakeup_word_to_model.keys():
+                        content_lower = content.lower()
+                        wakeup_lower = wakeup_word.lower()
+                        if content_lower.startswith(wakeup_lower) or f" {wakeup_lower}" in content_lower:
+                            logger.info(f"引用消息中检测到Dify插件的唤醒词: {wakeup_word}")
+
+                            # 为Dify插件特殊处理：直接调用文本消息处理方法
+                            # 创建一个修改后的消息副本，构建包含引用信息的查询
+                            modified_message = message.copy()
+
+                            # 构建包含引用信息的查询内容
+                            quote_info = message.get("Quote", {})
+                            quoted_content = quote_info.get("Content", "")
+                            quoted_msg_type = quote_info.get("MsgType")
+
+                            # 根据引用消息类型构建查询
+                            if quoted_msg_type == 3:  # 图片消息
+                                query_content = f"{content} (基于引用的图片)"
+                            elif quoted_msg_type == 43:  # 视频消息
+                                query_content = f"{content} (基于引用的视频)"
+                            elif quoted_msg_type == 49:  # 文档/文件消息
+                                query_content = f"{content} (基于引用的文档/文件)"
+                            elif quoted_content and quoted_content.strip():  # 有文本内容的消息
+                                query_content = f"{content} (引用消息: '{quoted_content}')"
+                            else:  # 其他类型或无内容的消息
+                                query_content = f"{content} (基于引用的消息)"
+
+                            modified_message["Content"] = query_content
+                            logger.info(f"为Dify插件构建引用查询: {query_content}")
+
+                            # 触发Dify插件的文本消息处理方法
+                            for method_name in dir(plugin):
+                                method = getattr(plugin, method_name)
+                                if hasattr(method, "_event_type") and method._event_type == "text_message":
+                                    result = await method(self.bot, modified_message)
+                                    if result is False:
+                                        return True
+                                    break
+
+                # 3. 检查插件的触发词属性
+                if hasattr(plugin, "trigger_words") and plugin.trigger_words:
+                    for trigger_word in plugin.trigger_words:
+                        if trigger_word.lower() in content.lower():
+                            logger.info(f"引用消息中检测到插件 {plugin_name} 的触发词: {trigger_word}")
+                            # 触发该插件的引用消息处理方法
+                            for method_name in dir(plugin):
+                                method = getattr(plugin, method_name)
+                                if hasattr(method, "_event_type") and method._event_type == "quote_message":
+                                    result = await method(self.bot, message)
+                                    if result is False:
+                                        return True
+                                    break
+
+                # 4. 检查插件的commands属性
+                if hasattr(plugin, "commands") and plugin.commands:
+                    for command in plugin.commands:
+                        content_first_word = content.split(" ", 1)[0].lower()
+                        if (content.lower().startswith(command.lower())
+                            or content_first_word == command.lower()):
+                            logger.info(f"引用消息中检测到插件 {plugin_name} 的命令: {command}")
+                            # 触发该插件的引用消息处理方法
+                            for method_name in dir(plugin):
+                                method = getattr(plugin, method_name)
+                                if hasattr(method, "_event_type") and method._event_type == "quote_message":
+                                    result = await method(self.bot, message)
+                                    if result is False:
+                                        return True
+                                    break
+
+        return False
 
     async def process_video_message(self, message):
         message["Content"] = message.get("Content", {}).get("string", "")

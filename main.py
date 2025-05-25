@@ -15,15 +15,10 @@ from watchdog.observers import Observer
 
 # 修改导入语句，确保导入正确的bot_core模块
 try:
-    # 先尝试使用相对导入（当前目录）
+    # 尝试使用相对导入
     from .bot_core import bot_core
 except ImportError:
-    # 如果相对导入失败，尝试使用绝对导入（当前目录）
-    import sys
-    import os
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    if current_dir not in sys.path:
-        sys.path.append(current_dir)
+    # 如果相对导入失败，使用绝对导入
     from bot_core import bot_core, set_bot_instance, update_bot_status
 
 # 管理后台启动函数
@@ -169,7 +164,7 @@ async def main():
         logger.info(f"  - 自动重启: {app_config.xybot.auto_restart}")
         
         # 设置日志级别
-        log_level = app_config.admin.log_level
+        log_level = config.get("Admin", {}).get("log_level", "INFO")
         
     except ConfigurationException as e:
         logger.error(f"❌ 配置错误: {e.message}")
@@ -424,6 +419,32 @@ if __name__ == "__main__":
     # 初始化日志（只保留一个彩色控制台处理器）
     logger.remove()
     logger.level("API", no=1, color="<cyan>")
+
+    # loguru 过滤器：屏蔽 aiosqlite.core 的 DEBUG 日志
+    def filter_aiosqlite(record):
+        if record["name"].startswith("aiosqlite.core") and record["level"].name == "DEBUG":
+            return False
+        return True
+
+    # 动态获取日志等级
+    log_level = "INFO"
+    try:
+        with open("main_config.toml", "rb") as f:
+            config = tomllib.load(f)
+            log_level = config.get("Admin", {}).get("log_level", "INFO")
+    except Exception:
+        pass
+
+    os.makedirs("logs", exist_ok=True)
+    logger.add(
+        "logs/xxxbot_{time}.log",
+        rotation="1 day",
+        encoding="utf-8",
+        retention="10 days",
+        level=log_level,
+        filter=filter_aiosqlite
+    )
+
     logger.add(
         sys.stdout,
         colorize=True,
@@ -433,17 +454,9 @@ if __name__ == "__main__":
                "<light-green>{function}</light-green>:"
                "<light-cyan>{line}</light-cyan> | "
                "{message}",
-        level="DEBUG"
+        level=log_level,
+        filter=filter_aiosqlite
     )
 
-    # 添加 logging→loguru 拦截器
-    class InterceptHandler(logging.Handler):
-        def emit(self, record):
-            level = logger.level(record.levelname).name if record.levelname in logger._core.levels else record.levelno
-            logger.opt(depth=6, exception=record.exc_info).log(level, record.getMessage())
-    logging.basicConfig(handlers=[InterceptHandler()], level=0)
-
-    os.makedirs("logs", exist_ok=True)
-    logger.add("logs/xxxbot_{time}.log", rotation="1 day", encoding="utf-8", retention="10 days", level="DEBUG")
-
+    logging.getLogger('aiosqlite.core').setLevel(logging.WARNING)
     asyncio.run(main())

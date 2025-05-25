@@ -20,7 +20,7 @@ class LoginMixin(WechatAPIClientBase):
         """
         try:
             async with aiohttp.ClientSession() as session:
-                response = await session.get(f'http://{self.ip}:{self.port}/VXAPI/IsRunning')
+                response = await session.get(f'http://{self.ip}:{self.port}/api/IsRunning')
                 return await response.text() == 'OK'
         except aiohttp.client_exceptions.ClientConnectorError:
             return False
@@ -47,11 +47,26 @@ class LoginMixin(WechatAPIClientBase):
                                            'ProxyPassword': proxy.password,
                                            'ProxyUser': proxy.username}
 
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/GetQR', json=json_param)
+            # 动态选择接口路径
+            protocol = getattr(self, 'protocol_version', None)
+            if protocol is None and hasattr(self, 'config'):
+                protocol = getattr(self.config, 'protocol_version', None)
+            if protocol is None:
+                protocol = 'ipad'  # 默认ipad
+            protocol = str(protocol).lower()
+            if protocol == 'ipad':
+                api_path = '/api/Login/LoginGetQR'
+            elif protocol == 'pad':
+                api_path = '/api/Login/LoginGetQRPad'
+            elif protocol == 'mac':
+                api_path = '/api/Login/LoginGetQRMac'
+            else:
+                api_path = '/api/Login/LoginGetQR'
+
+            response = await session.post(f'http://{self.ip}:{self.port}{api_path}', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
-
                 if print_qr:
                     qr = qrcode.QRCode(
                         version=1,
@@ -83,7 +98,7 @@ class LoginMixin(WechatAPIClientBase):
         """
         async with aiohttp.ClientSession() as session:
             json_param = {"uuid": uuid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/CheckQR', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/LoginCheckQR', data=json_param)
             if response.content_type == 'application/json':
                 json_resp = await response.json()
                 if json_resp and json_resp.get("Success"):
@@ -114,7 +129,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/Logout', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/Logout', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -146,7 +161,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/Awaken', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/LoginAwaken', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success") and json_resp.get("Data").get("QrCodeResponse").get("Uuid"):
@@ -180,7 +195,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"wxid": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/TwiceAutoAuth', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/LoginTwiceAutoAuth', data=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -201,7 +216,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"wxid": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/GetCacheInfo', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/GetCacheInfo', data=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -224,7 +239,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/Heartbeat', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/AutoHeartBeat', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -248,7 +263,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"wxid": self.wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/HeartBeat', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/AutoHeartBeat', data=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -272,7 +287,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/AutoHeartbeatStop', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/AutoHeartbeatStop', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -295,7 +310,7 @@ class LoginMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/AutoHeartbeatStatus', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Login/AutoHeartBeatLog', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

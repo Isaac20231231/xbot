@@ -247,91 +247,10 @@ async def bot_core():
     protocol_version = config.get("Protocol", {}).get("version", "849")
     logger.info(f"使用协议版本: {protocol_version}")
 
-    # 实例化WechatAPI客户端（使用新的异常处理）
-    try:
-        if protocol_version == "855":
-            # 855版本使用Client2
-            try:
-                # 尝试导入Client2
-                import sys
-                import importlib.util
-                client2_path = Path(__file__).resolve().parent / "WechatAPI" / "Client2"
-                if str(client2_path) not in sys.path:
-                    sys.path.append(str(client2_path))
-
-                # 检查Client2是否存在
-                if (client2_path / "__init__.py").exists():
-                    logger.info("WechatAPI Client2目录存在，使用855协议客户端")
-                    # 尝试导入客户端2
-                    from WechatAPI.Client2 import WechatAPIClient as WechatAPIClient2
-
-                    # 使用Client2
-                    bot = WechatAPIClient2(api_host, api_config.get("port", 9000))
-                    logger.success("✅ 成功加载855协议客户端")
-                else:
-                    logger.warning("WechatAPI Client2目录不存在，回退使用默认客户端")
-                    raise WechatAPIException("855协议客户端目录不存在", details={"client_path": str(client2_path)})
-            except ImportError as e:
-                logger.warning(f"855协议客户端导入失败: {e}")
-                raise WechatAPIException("855协议客户端导入失败", details={"error": str(e), "protocol": "855"})
-            except WechatAPIException:
-                # 重新抛出我们的自定义异常
-                raise
-            except Exception as e:
-                logger.error(f"855协议客户端初始化失败: {e}")
-                raise WechatAPIException("855协议客户端初始化失败", details={"error": str(e), "protocol": "855"})
-        elif protocol_version == "ipad" or protocol_version == "Mac":
-            # iPad/Mac版本使用Client3
-            try:
-                # 尝试导入Client3
-                import sys
-                import importlib.util
-                client3_path = Path(__file__).resolve().parent / "WechatAPI" / "Client3"
-                if str(client3_path) not in sys.path:
-                    sys.path.append(str(client3_path))
-
-                # 检查Client3是否存在
-                if (client3_path / "__init__.py").exists():
-                    logger.info(f"WechatAPI Client3目录存在，使用{protocol_version}协议客户端")
-                    # 尝试导入客户端3
-                    from WechatAPI.Client3 import WechatAPIClient as WechatAPIClient3
-
-                    # 使用Client3
-                    bot = WechatAPIClient3(api_host, api_config.get("port", 9000))
-                    logger.success(f"✅ 成功加载{protocol_version}协议客户端")
-                else:
-                    logger.warning("WechatAPI Client3目录不存在，回退使用默认客户端")
-                    raise WechatAPIException(f"{protocol_version}协议客户端目录不存在", details={"client_path": str(client3_path), "protocol": protocol_version})
-            except ImportError as e:
-                logger.warning(f"{protocol_version}协议客户端导入失败: {e}")
-                raise WechatAPIException(f"{protocol_version}协议客户端导入失败", details={"error": str(e), "protocol": protocol_version})
-            except WechatAPIException:
-                # 重新抛出我们的自定义异常
-                raise
-            except Exception as e:
-                logger.error(f"{protocol_version}协议客户端初始化失败: {e}")
-                raise WechatAPIException(f"{protocol_version}协议客户端初始化失败", details={"error": str(e), "protocol": protocol_version})
-        else:
-            # 849版本使用默认Client
-            bot = WechatAPI.WechatAPIClient(api_host, api_config.get("port", 9000))
-            logger.info("使用849协议客户端")
-
-    except WechatAPIException as e:
-        logger.error(f"❌ 微信API客户端初始化失败: {e.message}")
-        logger.error(f"协议版本: {e.details.get('protocol', 'unknown')}")
-        logger.warning("⚠️ 回退使用默认849协议客户端")
-        try:
-            # 回退到默认客户端
-            bot = WechatAPI.WechatAPIClient(api_host, api_config.get("port", 9000))
-            logger.success("✅ 默认协议客户端加载成功")
-        except Exception as fallback_e:
-            logger.error(f"❌ 默认协议客户端也无法加载: {fallback_e}")
-            update_bot_status("error", f"微信API客户端初始化完全失败: {fallback_e}")
-            return
-    except Exception as e:
-        logger.error(f"❌ 微信API客户端发生未知错误: {e}")
-        update_bot_status("error", f"微信API客户端未知错误: {e}")
-        return
+    # 统一实例化 WechatAPIClient
+    from WechatAPI.Client import WechatAPIClient
+    bot = WechatAPIClient(api_host, api_config.get("port", 9000))
+    logger.success("✅ 成功加载统一 WechatAPIClient 客户端")
 
     # 设置客户端属性
     bot.ignore_protect = config.get("XYBot", {}).get("ignore-protection", False)
@@ -403,13 +322,8 @@ async def bot_core():
                             # 这样我们可以更好地控制错误处理
                             async with aiohttp.ClientSession() as session:
                                 # 根据协议版本选择不同的 API 路径
-                                if protocol_version == "855":
-                                    api_base = "/api"
-                                elif protocol_version == "ipad" or protocol_version == "Mac":
-                                    api_base = "/api"
-                                else:
-                                    api_base = "/VXAPI"
-                                api_url = f'http://{api_host}:{api_config.get("port", 9000)}{api_base}/Login/Awaken'
+                                api_base = "/api"
+                                api_url = f'http://{api_host}:{api_config.get("port", 9000)}{api_base}/Login/LoginTwiceAutoAuth'
 
                                 # 准备请求参数
                                 json_param = {

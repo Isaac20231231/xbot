@@ -684,7 +684,11 @@ class XYBot:
                 else ""
             )
         except Exception as e:
-            logger.error("解析文本消息失败: {}", e)
+            if not message.get("MsgSource"):  # 空字符串常见于普通文本消息
+                logger.debug("MsgSource 为空，跳过 atuserlist 解析，无需报错。")
+            else:
+                logger.warning(f"MsgSource 解析失败，内容非有效XML: {message.get('MsgSource')}")
+                logger.debug(f"解析文本消息失败: {e}")
             ats = ""
 
         if ats:

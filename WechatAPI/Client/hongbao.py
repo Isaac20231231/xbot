@@ -21,7 +21,7 @@ class HongBaoMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Xml": xml, "EncryptKey": encrypt_key, "EncryptUserinfo": encrypt_userinfo,"InWay": "1"}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/TenPay/Receivewxhb', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/TenPay/Receivewxhb', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

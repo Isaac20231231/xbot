@@ -28,8 +28,8 @@ class PyqMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": wxid,"Fristpagemd5": "", "Maxid": max_id}
-            # response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/GetCacheInfo', data=json_param)
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/FriendCircle/GetList', json=json_param)
+            # response = await session.post(f'http://{self.ip}:{self.port}/api/Login/GetCacheInfo', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/FriendCircle/GetList', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -62,7 +62,7 @@ class PyqMixin(WechatAPIClientBase):
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": wxid, "Fristpagemd5": "", "Maxid": max_id, "Towxid": Towxid}
             # 使用正确的GetDetail接口获取特定用户的朋友圈
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/FriendCircle/GetDetail', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/FriendCircle/GetDetail', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -94,7 +94,7 @@ class PyqMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": wxid, "Id": id,"Content":Content,"Type":type,"ReplyCommnetId":ReplyCommnetId}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/FriendCircle/Comment', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/FriendCircle/Comment', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -116,7 +116,7 @@ class PyqMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": wxid, "Synckey": ""}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/FriendCircle/MmSnsSync', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/FriendCircle/MmSnsSync', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

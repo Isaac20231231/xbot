@@ -37,7 +37,7 @@ class FriendMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Scene": scene, "V1": v1, "V2": v2}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Friend/PassVerify', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Friend/PassVerify', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -62,7 +62,7 @@ class FriendMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "RequestWxids": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Friend/GetContact', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Friend/GetContact', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -95,7 +95,7 @@ class FriendMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Towxids": wxid, "Chatroom": chatroom}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Friend/GetContractDetail', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Friend/GetContractDetail', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -118,7 +118,7 @@ class FriendMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "CurrentWxcontactSeq": wx_seq, "CurrentChatroomContactSeq": chatroom_seq}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Friend/GetContractList', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Friend/GetContractList', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -149,7 +149,7 @@ class FriendMixin(WechatAPIClientBase):
                 "Offset": offset,
                 "Limit": limit
             }
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Friend/GetTotalContractList', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Friend/GetTotalContractList', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

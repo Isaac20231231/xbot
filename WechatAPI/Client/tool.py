@@ -15,7 +15,7 @@ from ..errors import *
 
 class ToolMixin(WechatAPIClientBase):
     async def download_image(self, aeskey: str, cdnmidimgurl: str) -> str:
-        """CDN下载高清图片。
+        """CDN下载高清图片（新版接口）。
 
         Args:
             aeskey (str): 图片的AES密钥
@@ -32,8 +32,8 @@ class ToolMixin(WechatAPIClientBase):
             raise UserLoggedOut("请先登录")
 
         async with aiohttp.ClientSession() as session:
-            json_param = {"Wxid": self.wxid, "AesKey": aeskey, "Cdnmidimgurl": cdnmidimgurl}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/CdnDownloadImg', json=json_param)
+            json_param = {"Wxid": self.wxid, "FileAesKey": aeskey, "FileNo": cdnmidimgurl}
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/CdnDownloadImage', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -61,7 +61,7 @@ class ToolMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "MsgId": msg_id, "Voiceurl": voiceurl, "Length": length}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/DownloadVoice', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/DownloadVoice', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -90,7 +90,7 @@ class ToolMixin(WechatAPIClientBase):
             timeout = aiohttp.ClientTimeout(total=300)  # 5分钟
 
             json_param = {"Wxid": self.wxid, "AttachId": attach_id}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/DownloadAttach', json=json_param,timeout=timeout)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/DownloadFile', json=json_param,timeout=timeout)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -116,7 +116,7 @@ class ToolMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "MsgId": msg_id}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/DownloadVideo', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/DownloadVideo', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -145,7 +145,7 @@ class ToolMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "StepCount": count}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/SetStep', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/SetStep', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -174,7 +174,7 @@ class ToolMixin(WechatAPIClientBase):
                           "Proxy": {"ProxyIp": f"{proxy.ip}:{proxy.port}",
                                     "ProxyUser": proxy.username,
                                     "ProxyPassword": proxy.password}}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/SetProxy', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/SetProxy', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -189,7 +189,7 @@ class ToolMixin(WechatAPIClientBase):
             bool: 数据库正常返回True，否则返回False
         """
         async with aiohttp.ClientSession() as session:
-            response = await session.get(f'http://{self.ip}:{self.port}/VXAPI/Tools/CheckDatabaseOK')
+            response = await session.get(f'http://{self.ip}:{self.port}/api/Tools/CheckDatabaseOK')
             json_resp = await response.json()
 
             if json_resp.get("Running"):
@@ -404,7 +404,7 @@ class ToolMixin(WechatAPIClientBase):
         # 发送请求上传文件
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Base64": file_base64}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/UploadFile', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/UploadFile', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -432,7 +432,7 @@ class ToolMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Md5": md5}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Tools/EmojiDownload', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Tools/EmojiDownload', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):

@@ -27,8 +27,8 @@ class UserMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"wxid": wxid}
-            # response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/GetCacheInfo', data=json_param)
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/User/GetContractProfile', data=json_param)
+            # response = await session.post(f'http://{self.ip}:{self.port}/api/Login/GetCacheInfo', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/User/GetContractProfile', data=json_param)
             json_resp = await response.json()
             
             if json_resp.get("Success"):
@@ -58,7 +58,7 @@ class UserMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "Style": style}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/User/GetQRCode', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/User/GetQRCode', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -104,8 +104,8 @@ class UserMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"wxid": wxid}
-            # response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Login/GetCacheInfo', data=json_param)
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Label/GetList', data=json_param)
+            # response = await session.post(f'http://{self.ip}:{self.port}/api/Login/GetCacheInfo', data=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Label/GetList', data=json_param)
             json_resp = await response.json()
             
             if json_resp.get("Success"):

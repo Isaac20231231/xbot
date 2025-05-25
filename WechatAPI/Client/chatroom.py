@@ -25,7 +25,7 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "ChatRoomName": chatroom, "ToWxids": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/AddChatroomMember', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/AddChatroomMember', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -47,7 +47,7 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "QID": chatroom}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/GetChatroomInfoDetail', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/GetChatroomInfoDetail', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -73,7 +73,7 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "QID": chatroom}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/GetChatroomInfo', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/GetChatroomInfo', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -95,7 +95,7 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "QID": chatroom}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/GetChatroomMemberDetail', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/GetChatroomMemberDetail', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -119,7 +119,7 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "QID": chatroom}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/GetQRCode', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/GetQRCode', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
@@ -148,33 +148,10 @@ class ChatroomMixin(WechatAPIClientBase):
 
         async with aiohttp.ClientSession() as session:
             json_param = {"Wxid": self.wxid, "ChatRoomName": chatroom, "ToWxids": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/InviteChatroomMember', json=json_param)
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Group/InviteChatroomMember', json=json_param)
             json_resp = await response.json()
 
             if json_resp.get("Success"):
                 return True
-            else:
-                self.error_handler(json_resp)
-
-    async def get_some_member_info(self, chatroom: str, wxid: str) -> dict:
-        """获取群聊成员信息
-
-        Args:
-            QID: 群聊id
-            ToWxid: 成员wxid
-
-        Returns:
-            dict: 群聊成员信息
-        """
-        if not self.wxid:
-            raise UserLoggedOut("请先登录")
-
-        async with aiohttp.ClientSession() as session:
-            json_param = {"Wxid": self.wxid, "QID": chatroom, "ToWxid": wxid}
-            response = await session.post(f'http://{self.ip}:{self.port}/VXAPI/Group/GetSomeMemberInfo', json=json_param)
-            json_resp = await response.json()
-
-            if json_resp.get("Success"):
-                return json_resp.get("Data")
             else:
                 self.error_handler(json_resp)

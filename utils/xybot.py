@@ -16,6 +16,7 @@ from database.messsagDB import MessageDB
 from utils.event_manager import EventManager
 from WechatAPI import WechatAPIClient
 from WechatAPI.Client.protect import protector
+from database.message_counter import get_instance as get_message_counter
 
 
 class XYBot:
@@ -550,6 +551,10 @@ class XYBot:
 
     async def process_message(self, message: Dict[str, Any]):
         """处理接收到的消息"""
+
+        # 统计所有消息
+        message_counter = get_message_counter()
+        message_counter.increment()
 
         # 简单WebSocket消息转换 - 最小化修改
         # 只做必要的字段映射，保持原有处理逻辑不变

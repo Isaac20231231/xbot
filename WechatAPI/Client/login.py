@@ -63,6 +63,8 @@ class LoginMixin(WechatAPIClientBase):
             else:
                 api_path = '/api/Login/LoginGetQR'
 
+            print(f"protocol={protocol}, api_path={api_path}")
+
             response = await session.post(f'http://{self.ip}:{self.port}{api_path}', json=json_param)
             json_resp = await response.json()
 

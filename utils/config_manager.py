@@ -469,7 +469,7 @@ class ConfigManager:
             raise ConfigurationException("配置对象未初始化")
 
         # 验证协议版本
-        valid_protocols = ["849", "855", "ipad", "Mac"]
+        valid_protocols = ["pad", "mac", "ipad"]
         if self._config.protocol.version not in valid_protocols:
             raise ConfigurationException(
                 f"无效的协议版本: {self._config.protocol.version}，支持的版本: {valid_protocols}",

@@ -244,13 +244,13 @@ async def bot_core():
     #              redis_db=api_config.get("redis-db", 0))
 
     # 读取协议版本设置
-    protocol_version = config.get("Protocol", {}).get("version", "849")
+    protocol_version = config.get("Protocol", {}).get("version", "ipad").lower()
     logger.info(f"使用协议版本: {protocol_version}")
 
     # 统一实例化 WechatAPIClient
     from WechatAPI.Client import WechatAPIClient
-    bot = WechatAPIClient(api_host, api_config.get("port", 9000))
-    logger.success("✅ 成功加载统一 WechatAPIClient 客户端")
+    bot = WechatAPIClient(api_host, api_config.get("port", 9000), protocol_version=protocol_version)
+    logger.success(f"✅ 成功加载统一 WechatAPIClient 客户端，protocol_version={getattr(bot, 'protocol_version', None)}")
 
     # 设置客户端属性
     bot.ignore_protect = config.get("XYBot", {}).get("ignore-protection", False)

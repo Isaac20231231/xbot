@@ -1,6 +1,6 @@
 # 协议版本选择
 [Protocol]
-version = "ipad"            # 协议版本，可选值: "ipad", "pad" 或 "Mac"
+version = "ipad"            # 协议版本，可选值: "ipad", "pad" 或 "mac"
 
 [Framework]
 type = "wechat"  

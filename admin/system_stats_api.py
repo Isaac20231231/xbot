@@ -151,64 +151,22 @@ async def handle_system_stats(request: Request, type: str = "system", time_range
                                 "count": count
                             })
                     else:
-                        # 如果没有获取到每日数据，使用固定分布
-                        # 如果总消息数为0，则所有天都为0
-                        if total_messages == 0:
-                            for day in range(7):
-                                date = current_date - timedelta(days=6-day)
-                                items.append({
-                                    "label": date.strftime("%m-%d"),
-                                    "count": 0
-                                })
-                        else:
-                            # 使用固定分布而不是随机分布
-                            day_values = [0] * 7
-
-                            # 将总消息按照合理的分布分配到各天
-                            # 今天的消息数已知
-                            day_values[6] = today_messages
-
-                            # 剩余消息平均分配到前6天，但呈递增趋势
-                            remaining = total_messages - today_messages
-                            if remaining > 0:
-                                # 创建递增权重
-                                weights = [1, 1.5, 2, 2.5, 3, 4]  # 权重递增
-                                total_weight = sum(weights)
-
-                                # 按权重分配
-                                for i in range(6):
-                                    day_values[i] = int(remaining * weights[i] / total_weight)
-
-                            # 创建数据项
-                            for day in range(7):
-                                date = current_date - timedelta(days=6-day)
-                                items.append({
-                                    "label": date.strftime("%m-%d"),
-                                    "count": day_values[day]
-                                })
-                except Exception as e:
-                    logger.error(f"获取每日消息统计失败，使用固定分布: {str(e)}")
-                    # 如果出错，使用简单分布
-                    if total_messages == 0:
+                        # fallback: 7天分布，全部为0
                         for day in range(7):
                             date = current_date - timedelta(days=6-day)
                             items.append({
                                 "label": date.strftime("%m-%d"),
                                 "count": 0
                             })
-                    else:
-                        # 今天的消息数已知，其余平均分配
-                        remaining = total_messages - today_messages
-                        avg_per_day = remaining // 6 if remaining > 0 else 0
-
-                        day_values = [avg_per_day] * 6 + [today_messages]
-
-                        for day in range(7):
-                            date = current_date - timedelta(days=6-day)
-                            items.append({
-                                "label": date.strftime("%m-%d"),
-                                "count": day_values[day]
-                            })
+                except Exception as e:
+                    logger.error(f"获取每日消息统计失败，使用固定分布: {str(e)}")
+                    # fallback: 7天分布，全部为0
+                    for day in range(7):
+                        date = current_date - timedelta(days=6-day)
+                        items.append({
+                            "label": date.strftime("%m-%d"),
+                            "count": 0
+                        })
 
             else:  # days == 30
                 # 本月，按天统计
@@ -232,87 +190,22 @@ async def handle_system_stats(request: Request, type: str = "system", time_range
                                 "count": count
                             })
                     else:
-                        # 如果没有获取到每日数据，使用固定分布
-                        # 如果总消息数为0，则所有天都为0
-                        if total_messages == 0:
-                            for day in range(30):
-                                date = current_date - timedelta(days=29-day)
-                                items.append({
-                                    "label": date.strftime("%m-%d"),
-                                    "count": 0
-                                })
-                        else:
-                            # 使用固定分布而不是随机分布
-                            day_values = [0] * 30
-
-                            # 将总消息按照合理的分布分配到各天
-                            # 今天的消息数已知
-                            day_values[29] = today_messages
-
-                            # 剩余消息按照一定规律分配到前29天
-                            remaining = total_messages - today_messages
-                            if remaining > 0:
-                                # 创建波动分布，模拟工作日和周末的差异
-                                # 工作日（周一到周五）消息较多，周末（周六周日）消息较少
-                                weights = []
-                                for day in range(29):
-                                    date = current_date - timedelta(days=29-day)
-                                    # 周一到周五权重为1.2，周六周日权重为0.8
-                                    if date.weekday() < 5:  # 0-4是周一到周五
-                                        weights.append(1.2)
-                                    else:
-                                        weights.append(0.8)
-
-                                # 添加递增趋势，越接近今天消息越多
-                                for i in range(29):
-                                    # 添加递增因子，从0.5递增到1.5
-                                    trend_factor = 0.5 + (i / 28) * 1.0
-                                    weights[i] *= trend_factor
-
-                                total_weight = sum(weights)
-
-                                # 按权重分配
-                                for i in range(29):
-                                    day_values[i] = int(remaining * weights[i] / total_weight)
-
-                            # 创建数据项
-                            for day in range(30):
-                                date = current_date - timedelta(days=29-day)
-                                items.append({
-                                    "label": date.strftime("%m-%d"),
-                                    "count": day_values[day]
-                                })
-                except Exception as e:
-                    logger.error(f"获取每日消息统计(30天)失败，使用固定分布: {str(e)}")
-                    # 如果出错，使用简单分布
-                    if total_messages == 0:
+                        # fallback: 30天分布，全部为0
                         for day in range(30):
                             date = current_date - timedelta(days=29-day)
                             items.append({
                                 "label": date.strftime("%m-%d"),
                                 "count": 0
                             })
-                    else:
-                        # 今天的消息数已知，其余平均分配但有波动
-                        remaining = total_messages - today_messages
-                        avg_per_day = remaining // 29 if remaining > 0 else 0
-
-                        day_values = [0] * 30
-                        day_values[29] = today_messages  # 今天的消息
-
-                        # 为前29天分配消息，有一定波动
-                        for i in range(29):
-                            # 波动因子，0.8-1.2之间
-                            factor = 0.8 + (i % 5) * 0.1
-                            day_values[i] = int(avg_per_day * factor)
-
-                        # 创建数据项
-                        for day in range(30):
-                            date = current_date - timedelta(days=29-day)
-                            items.append({
-                                "label": date.strftime("%m-%d"),
-                                "count": day_values[day]
-                            })
+                except Exception as e:
+                    logger.error(f"获取每日消息统计(30天)失败，使用固定分布: {str(e)}")
+                    # fallback: 30天分布，全部为0
+                    for day in range(30):
+                        date = current_date - timedelta(days=29-day)
+                        items.append({
+                            "label": date.strftime("%m-%d"),
+                            "count": 0
+                        })
 
             # 返回消息统计数据
             return JSONResponse(content={

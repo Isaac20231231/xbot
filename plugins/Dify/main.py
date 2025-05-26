@@ -3062,8 +3062,7 @@ class Dify(PluginBase):
                 api_host = app_config.wechat_api.host
                 api_port = app_config.wechat_api.port
                 urls = [
-                    f'http://{api_host}:{api_port}/api/Tools/DownloadFile',
-                    f'http://{api_host}:{api_port}/VXAPI/Tools/DownloadFile'
+                    f'http://{api_host}:{api_port}/api/Tools/DownloadFile'
                 ]
 
                 download_success = False

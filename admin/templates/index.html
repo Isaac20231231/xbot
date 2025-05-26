@@ -1291,9 +1291,15 @@
 
             console.log('图表初始化完成，准备获取数据');
 
-            // 初始化后立即获取今天的数据
+            // 初始化后获取当前选中的时间范围
             setTimeout(() => {
-                getMessageStatistics('1');
+                // 获取当前激活的时间范围按钮
+                const activeButton = document.querySelector('.time-filter button.active');
+                const timeRange = activeButton ? activeButton.getAttribute('data-time') : '1';
+                console.log('初始化图表使用时间范围:', timeRange);
+                
+                // 使用当前激活的时间范围获取数据
+                getMessageStatistics(timeRange);
 
                 // 额外的保障措施，确保加载状态被隐藏
                 setTimeout(() => {
@@ -1774,32 +1780,50 @@
 
         // 时间过滤切换
         const timeButtons = document.querySelectorAll('.time-filter button');
-        timeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                // 如果已经是激活状态，不重复请求
-                if (this.classList.contains('active')) {
-                    console.log('已经是当前选中的时间范围，不重复请求');
-                    return;
-                }
-
-                // 更新按钮状态
-                timeButtons.forEach(btn => btn.classList.remove('active'));
-                this.classList.add('active');
-
-                // 获取时间范围
-                const timeRange = this.getAttribute('data-time');
-                console.log('点击了时间过滤按钮，切换到:', timeRange);
-
-                // 更新图表
-                updateChart(timeRange);
-
-                // 添加动画效果
-                this.classList.add('animate__animated', 'animate__pulse');
-                setTimeout(() => {
-                    this.classList.remove('animate__animated', 'animate__pulse');
-                }, 500);
+        console.log('找到时间过滤按钮数量:', timeButtons.length);  // 调试输出
+        
+        // 确保按钮存在
+        if (timeButtons.length > 0) {
+            timeButtons.forEach((button, index) => {
+                console.log(`按钮 ${index} 的 data-time:`, button.getAttribute('data-time')); // 调试输出
+                
+                // 移除可能已存在的事件监听器
+                button.removeEventListener('click', timeButtonClickHandler);
+                
+                // 添加新的事件监听器
+                button.addEventListener('click', timeButtonClickHandler);
             });
-        });
+        } else {
+            console.error('未找到时间过滤按钮!');
+        }
+        
+        // 时间按钮点击处理函数
+        function timeButtonClickHandler(event) {
+            const button = event.currentTarget;
+            
+            // 如果已经是激活状态，不重复请求
+            if (button.classList.contains('active')) {
+                console.log('已经是当前选中的时间范围，不重复请求');
+                return;
+            }
+            
+            // 更新按钮状态
+            timeButtons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            // 获取时间范围
+            const timeRange = button.getAttribute('data-time');
+            console.log('点击了时间过滤按钮，切换到:', timeRange);
+            
+            // 更新图表
+            updateChart(timeRange);
+            
+            // 添加动画效果
+            button.classList.add('animate__animated', 'animate__pulse');
+            setTimeout(() => {
+                button.classList.remove('animate__animated', 'animate__pulse');
+            }, 500);
+        }
 
         // 事件委托处理
         document.addEventListener('click', function(event) {
@@ -1836,22 +1860,23 @@
         initMessageChart();
 
         // 获取并更新消息总数
-        updateMessageCount();
+        updateTotalMessageCount();
 
         // 定时刷新状态
         setInterval(() => {
             getBotStatus();
             getSystemStatus();
-            updateMessageCount(); // 定时更新消息总数
+            // 只更新总消息数，不更新图表
+            updateTotalMessageCount();
         }, 30000);
 
-        // 获取并更新消息总数
-        function updateMessageCount() {
+        // 获取并更新消息总数（不更新图表）
+        function updateTotalMessageCount() {
             fetch('/api/system/stats?type=messages&range=1')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success && data.data) {
-                        // 更新消息总数显示
+                        // 只更新消息总数显示，不影响图表
                         const messageCountElement = document.getElementById('message-count');
                         if (messageCountElement) {
                             messageCountElement.textContent = data.data.total || 0;
@@ -1859,8 +1884,18 @@
                     }
                 })
                 .catch(error => {
-                    console.error('获取消息统计数据失败:', error);
+                    console.error('获取消息总数失败:', error);
                 });
+        }
+
+        // 原updateMessageCount函数只在初始化时调用一次
+        function updateMessageCount() {
+            // 获取当前激活的时间范围按钮
+            const activeButton = document.querySelector('.time-filter button.active');
+            const timeRange = activeButton ? activeButton.getAttribute('data-time') : '1';
+            
+            // 使用当前激活的时间范围更新图表
+            updateChart(timeRange);
         }
 
         // 按钮事件处理

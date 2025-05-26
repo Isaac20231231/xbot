@@ -19,8 +19,9 @@ class WechatAPIClient(LoginMixin, MessageMixin, FriendMixin, ChatroomMixin, User
 
     # 这里都是需要结合多个功能的方法
     
-    def __init__(self, ip: str, port: int):
+    def __init__(self, ip: str, port: int, protocol_version=None):
         super().__init__(ip, port)
+        self.protocol_version = protocol_version
         self.contacts_db = None
     
     def get_contacts_db(self):

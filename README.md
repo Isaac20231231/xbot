@@ -12,21 +12,17 @@ XXXBot 是一个基于微信的智能机器人系统，通过整合多种 API �
 
 ### 🔄 双协议支持与框架模式
 
-本系统现已支持多种微信协议版本和框架模式：
+本系统现已支持多种微信协议：
 
 #### 协议版本支持
 
-暂时只能使用 Mac 协议
+- **pad 协议**
+- **ipad 协议**
+- **mac**
 
-- **849 协议**：适用于 iPad 版本，使用 `/VXAPI` 路径前缀
-- **855 协议**：适用于安卓 PAD 版本，使用 `/api` 路径前缀
-- **ipad 协议**：适用于新版 iPad 协议，使用 `/api` 路径前缀
-- **Mac**：适用于 Mac 协议，使用 `/api` 路径前缀（Mac 登录后请不要使用 PC 登录 bot）
+#### 框架模式支持
 
-#### 框架模式支持（所有协议版本均支持）
-
-- **default**：使用原始框架（默认模式）
-- **dual**：双框架模式，同时运行原始框架和 DOW 框架
+- **wechat**：
 
 通过在 `main_config.toml` 文件中设置 `Protocol.version` 和 `Framework.type` 参数，系统会自动选择相应的服务和 API 路径。详细配置方法请参见[协议配置](#协议配置)部分。
 
@@ -38,38 +34,8 @@ XXXBot 是一个基于微信的智能机器人系统，通过整合多种 API �
 
 ```toml
 [Protocol]
-version = "849"  # 可选值：849, 855, ipad, Mac
+version = "ipad"  # 可选值：pad, ipad, Mac
 ```
-
-- 选择 **849 协议**后，需要在 dow 文件夹中 `config.toml` 文件中设置 `wx849_protocol_version` 为 `849`
-- 选择 **855/ipad/Mac 协议**后，需要在 dow 文件夹中 `config.toml` 文件中设置 `wx849_protocol_version` 为 `ipad`
-
-同时确保已正确配置 `DOW` 框架的相关参数。
-
-#### 📬 回调机制工作原理
-
-系统采用高效的回调机制处理消息，运行流程如下：
-
-1. 原始框架接收微信消息（文本、图片、语音、视频、文件等）
-2. 回调脚本（如 `wx849_callback_daemon.py`）监控并解析消息
-3. 消息按类型被标记（文本=1，图片=3，语音=34，视频=43，文件=49）
-4. 以 JSON 格式通过 HTTP POST 请求发送至 DOW 框架
-5. DOW 框架接收并处理消息，返回响应
-
-这种回调模式较传统轮询机制有以下优势：
-
-- 避免两个框架同时轮询 API 造成冲突
-- 降低服务器负载，减少消息处理延迟
-- 提高整体稳定性，降低消息丢失风险
-
-#### 📷 图片和文件消息处理
-
-图片和文件消息的处理流程：
-
-- 多媒体消息以 XML 格式传递，包含必要的元数据（如 `aeskey`、URL、文件大小等）
-- DOW 框架解析 XML 提取关键信息，用于获取原始媒体内容
-- 回复图片时，会将图像转换为 Base64 格式通过 API 接口发送
-- 网络图片 URL 会先下载到本地再处理后发送
 
 ## 🚀 快速开始
 
@@ -240,29 +206,23 @@ version = "849"  # 可选值：849, 855, ipad, Mac
 
    ```toml
    [Protocol]
-   version = "849"  # 可选值: "849", "855" 或 "ipad"，"Mac"
+   version = "ipad"  # 可选值：pad, ipad, Mac
    ```
 
-   - **849**: 适用于 iPad 版本，使用 `/VXAPI` 路径前缀
-   - **855**: 适用于安卓 PAD 版本，使用 `/api` 路径前缀
-   - **ipad**: 适用于新版 iPad 协议，使用 `/api` 路径前缀
-   - **Mac**: 适用于 Mac 协议，使用 `/api` 路径前缀（Mac 登录后请不要使用 PC 登录 bot）
+- **pad 协议**
+- **ipad 协议**
+- **mac**
 
-   系统会根据配置的协议版本自动选择正确的服务路径和 API 路径前缀。如果遇到 API 请求失败的情况，系统会自动尝试使用另一种协议路径，确保功能正常工作。
+系统会根据配置的协议版本自动选择正确的服务路径和 API 路径前缀。
 
    <h3 id="框架配置">框架配置</h3>
 
-   在 `main_config.toml` 文件中添加以下配置来选择框架模式：
+在 `main_config.toml` 文件中添加以下配置来选择框架模式：
 
-   ```toml
-   [Framework]
-   type = "default"  # 可选值: "default" 或 "dual"
-   ```
-
-   - **default**: 使用原始框架
-   - **dual**: 双框架模式，同时运行原始框架和 DOW 框架（先启动原始框架，然后启动 DOW 框架）
-
-   在双框架模式下，系统会先启动原始框架，等待登录成功后再启动 DOW 框架。这样可以同时使用两个框架的功能，但会消耗更多资源。
+```toml
+[Framework]
+type = "wechat"
+```
 
 6. **启动必要的服务**
 
@@ -278,11 +238,8 @@ version = "849"  # 可选值：849, 855, ipad, Mac
    - ❗ **第二步**：启动 PAD 服务 📱
 
      - 根据你的协议版本选择相应的服务：
-       - **849 协议（iPad）**：进入 `849/pad` 目录，双击 `main.exe` 文件
-       - **855 协议（安卓 PAD）**：进入 `849/pad2` 目录，双击 `main.exe` 文件
-       - **ipad 协议（新版 iPad）**：进入 `849/pad3` 目录，双击 `main.exe` 文件
-       - **Mac 协议**：进入 `849/pad3` 目录，双击 `main.exe` 文件
-     - 等待窗口显示 PAD 服务启动成功
+       - 直接启动 docker 容器：xbot-wechat
+       - 映射 9011 和 9088 两个端口
 
    - ⚠️ 请确保这两个服务窗口始终保持打开状态，不要关闭它们！
 
@@ -298,7 +255,7 @@ version = "849"  # 可选值：849, 855, ipad, Mac
 
      ```bash
      # 进入Redis目录
-     cd 849/redis
+     cd redis
 
      # 使用Linux配置文件启动Redis
      redis-server redis.linux.conf
@@ -319,31 +276,8 @@ version = "849"  # 可选值：849, 855, ipad, Mac
 
      根据你的协议版本选择相应的服务：
 
-     **849 协议（iPad）**：
-
-     ```bash
-     # 进入PAD目录
-     cd 849/pad
-
-     # 给执行文件添加执行权限
-     chmod +x linuxService
-
-     # 运行服务
-     ./linuxService
-     ```
-
-     **855 协议（安卓 PAD）**：
-
-     ```bash
-     # 进入PAD2目录
-     cd 849/pad2
-
-     # 给执行文件添加执行权限
-     chmod +x linuxService
-
-     # 运行服务
-     ./linuxService
-     ```
+     - 直接启动 docker 容器：xbot-wechat
+     - 映射 9011 和 9088 两个端口
 
    - ⚠️ 请确保这两个服务进程保持运行状态，可以使用如下命令检查：
 
@@ -351,8 +285,6 @@ version = "849"  # 可选值：849, 855, ipad, Mac
      # 检查Redis服务
      ps aux | grep redis
 
-     # 检查PAD服务
-     ps aux | grep linuxService
      ```
 
    **然后启动主服务**：
@@ -362,8 +294,6 @@ version = "849"  # 可选值：849, 855, ipad, Mac
    ```
 
 #### 🔺 方法二：Docker 安装 🐳
-
-> 💡 **注意**：Docker 环境会自动启动 Redis 和 PAD 服务，无需手动启动。这是通过 `entrypoint.sh` 脚本实现的。脚本会根据 `main_config.toml` 中的 `Protocol.version` 设置自动选择启动 849 或 855 协议的 PAD 服务。
 
 1. **使用 Docker Compose 一键部署**
 
@@ -380,16 +310,27 @@ version = "849"  # 可选值：849, 855, ipad, Mac
 
 2. **更新到最新版本**
 
-   ```bash
-   # 拉取最新镜像
-   docker-compose pull
+   替换群里的框架压缩包到容器中（xbot）
 
-   # 重启服务
-   docker-compose down
-   docker-compose up -d
-   ```
+3. **启动协议容器**
 
-   我们已经更新了 `docker-compose.yml` 文件，添加了 `pull_policy: always` 设置，确保每次启动容器时都会检查并拉取最新的镜像。更多更新相关的详细信息，请查看 [UPDATE_GUIDE.md](UPDATE_GUIDE.md) 文件。
+下载容器 xbot-wechat
+映射端口 9011 和 9088
+
+#### WechatAPIServer 配置设置
+
+```bash
+# 克隆代码库
+[WechatAPIServer]
+host = "192.168.6.19"      # WechatAPI服务器地址，为xbot-wechat所在主机的ip地址
+port = 9011                # WechatAPI服务器端口，默认9011
+mode = "release"           # 运行模式：release(生产环境)，debug(调试模式)
+redis-host = "127.0.0.1"   # Redis服务器地址，本地使用127.0.0.1
+redis-port = 6379          # Redis端口，使用系统Redis服务的默认端口
+redis-password = ""        # Redis密码，如果有设置密码则填写
+redis-db = 0               # Redis数据库编号，默认0
+ws-url = "ws://192.168.6.19:9088/ws"  #为xbot-wechat所在主机ip+9088端口
+```
 
 ### 🔍 访问后台
 
@@ -510,7 +451,7 @@ option_2 = 123
 - 优先级范围是 0-99，默认为 50，值越高优先级越高
 - 如果没有设置全局优先级，则使用各个处理函数装饰器中设置的优先级
 
-## ❓ 常见问题
+## 🔴 常见问题
 
 1. **安装依赖失败** 💻
 
@@ -580,33 +521,28 @@ option_2 = 123
 
 ```
 XXXBot/
-  ├── admin/                  # 管理后台
-  │   ├── static/             # 静态资源
-  │   ├── templates/          # HTML模板
-  │   └── friend_circle_api.py # 朋友圈API
-  ├── plugins/                # 插件目录
-  │   ├── Dify/               # Dify插件
-  │   ├── Menu/               # 菜单插件
-  │   ├── SignIn/             # 签到插件
-  │   └── YujieSajiao/        # 语音撒娇插件
-  ├── database/               # 数据库相关
-  ├── utils/                  # 工具函数
-  ├── WechatAPI/              # 微信API接口
-  ├── 849/                    # PAD协议相关
-  │   ├── pad/               # 849协议客户端（适用于 iPad）
-  │   ├── pad2/              # 855协议客户端（适用于安卓 PAD）
-  │   └── redis/             # Redis服务
-  ├── dow/                   # DOW框架目录
-  │   ├── channel/           # 通道实现
-  │   │   └── wx849/         # WX849通道
-  │   ├── app.py             # DOW框架主程序
-  │   └── requirements.txt   # DOW框架依赖
-  ├── app.py                  # 主应用入口
-  ├── main.py                 # 机器人主程序
-  ├── entrypoint.sh           # Docker入口脚本
-  ├── Dockerfile              # Docker构建文件
-  ├── requirements.txt        # 依赖列表
-  └── main_config.toml        # 主配置文件
+├── admin/                  # 管理后台
+│   ├── static/             # 静态资源（前端 JS/CSS/图片等）
+│   ├── templates/          # HTML 模板
+│   └── friend_circle_api.py# 朋友圈相关 API
+│
+├── plugins/                # 插件目录（功能扩展）
+│   ├── Dify/               # Dify 插件
+│   ├── Menu/               # 菜单插件
+│   ├── SignIn/             # 签到插件
+│   └── YujieSajiao/        # 语音撒娇插件
+│
+├── database/               # 数据库相关（如模型、迁移等）
+├── utils/                  # 工具函数与通用模块
+├── WechatAPI/              # 微信 API 接口封装
+│
+│
+├── app.py                  # 主应用入口（如 FastAPI 启动）
+├── main.py                 # 机器人主程序入口
+├── entrypoint.sh           # Docker 启动脚本
+├── Dockerfile              # Docker 构建文件
+├── requirements.txt        # 依赖列表
+└── main_config.toml        # 主配置文件
 ```
 
 ## 📜 协议和许可

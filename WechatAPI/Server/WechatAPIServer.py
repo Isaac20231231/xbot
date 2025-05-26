@@ -6,7 +6,6 @@ import re
 import json
 import time
 
-import xywechatpad_binary
 from loguru import logger
 
 

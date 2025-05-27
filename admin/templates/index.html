@@ -1801,28 +1801,28 @@
         function timeButtonClickHandler(event) {
             const button = event.currentTarget;
             
-            // 如果已经是激活状态，不重复请求
+                // 如果已经是激活状态，不重复请求
             if (button.classList.contains('active')) {
-                console.log('已经是当前选中的时间范围，不重复请求');
-                return;
-            }
-            
-            // 更新按钮状态
-            timeButtons.forEach(btn => btn.classList.remove('active'));
+                    console.log('已经是当前选中的时间范围，不重复请求');
+                    return;
+                }
+
+                // 更新按钮状态
+                timeButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
-            
-            // 获取时间范围
+
+                // 获取时间范围
             const timeRange = button.getAttribute('data-time');
-            console.log('点击了时间过滤按钮，切换到:', timeRange);
-            
-            // 更新图表
-            updateChart(timeRange);
-            
-            // 添加动画效果
+                console.log('点击了时间过滤按钮，切换到:', timeRange);
+
+                // 更新图表
+                updateChart(timeRange);
+
+                // 添加动画效果
             button.classList.add('animate__animated', 'animate__pulse');
-            setTimeout(() => {
+                setTimeout(() => {
                 button.classList.remove('animate__animated', 'animate__pulse');
-            }, 500);
+                }, 500);
         }
 
         // 事件委托处理

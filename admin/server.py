@@ -873,7 +873,8 @@ def init_app():
     logger.info("初始化FastAPI应用")
 
     # 配置静态文件目录
-    static_dir = os.path.join(current_dir, "static")
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    static_dir = os.path.abspath(os.path.join(current_dir, "static"))
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
     app.mount("/admin/static", StaticFiles(directory=static_dir), name="admin.static")
     logger.info("静态文件目录配置完成")

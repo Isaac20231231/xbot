@@ -903,6 +903,47 @@ def init_app():
     logger.info(f"管理后台初始化完成，将在 {config['host']}:{config['port']} 上启动")
 
 def setup_routes():
+    # 首先定义check_auth函数并设置到app.state中
+    async def check_auth(request: Request):
+        """检查用户是否已认证"""
+        try:
+            # 从Cookie中获取会话数据
+            session_cookie = request.cookies.get("session")
+            if not session_cookie:
+                logger.debug("未找到会话Cookie")
+                return None
+
+            # 调试日志
+            logger.debug(f"获取到会话Cookie: {session_cookie[:15]}...")
+
+            # 解码会话数据
+            try:
+                serializer = URLSafeSerializer(config["secret_key"], "session")
+                session_data = serializer.loads(session_cookie)
+
+                # 输出会话数据，辅助调试
+                logger.debug(f"解析会话数据成功: {session_data}")
+
+                # 检查会话是否已过期
+                expires = session_data.get("expires", 0)
+                if expires < time.time():
+                    logger.debug(f"会话已过期: 当前时间 {time.time()}, 过期时间 {expires}")
+                    return None
+
+                # 会话有效
+                logger.debug(f"会话有效，用户: {session_data.get('username')}")
+                return session_data.get("username")
+            except Exception as e:
+                logger.error(f"解析会话数据失败: {str(e)}")
+                return None
+        except Exception as e:
+            logger.error(f"检查认证失败: {str(e)}")
+            return None
+
+    # 将check_auth函数设置到app.state中，供其他模块使用
+    app.state.check_auth = check_auth
+    logger.info("check_auth函数已设置到app.state中")
+
     # 注册所有模块化路由
     try:
         from .routes.register_routes import register_all_routes
@@ -1005,27 +1046,6 @@ def setup_routes():
             logger.exception(f"加载定时提醒页面模板失败: {str(e)}")
             return HTMLResponse(f"<h1>加载定时提醒页面失败</h1><p>错误: {str(e)}</p>")
 
-    # 将check_auth函数定义移到这里，在导入reminder_api之前
-    async def check_auth(request: Request):
-        """检查用户认证状态"""
-        try:
-            token = request.headers.get('Authorization')
-            if not token:
-                # 尝试从cookie中获取token
-                token = request.cookies.get('token')
-
-            if not token:
-                raise HTTPException(status_code=401, detail="未登录或登录已过期")
-
-            # 这里可以添加token验证的逻辑
-            # 例如验证token的有效性，检查是否过期等
-            # 如果验证失败，抛出HTTPException(status_code=401)
-
-            return True
-        except Exception as e:
-            logger.error(f"认证检查失败: {str(e)}")
-            raise HTTPException(status_code=401, detail="认证失败")
-
     # 导入并注册提醒相关路由
     try:
         import sys
@@ -1038,45 +1058,8 @@ def setup_routes():
         from reminder_api import register_reminder_routes
         logger.info("成功导入reminder_api.register_reminder_routes")
 
-        # 先定义check_auth函数
-        async def check_auth(request: Request):
-            """检查用户是否已认证"""
-            try:
-                # 从Cookie中获取会话数据
-                session_cookie = request.cookies.get("session")
-                if not session_cookie:
-                    logger.debug("未找到会话Cookie")
-                    return None
-
-                # 调试日志
-                logger.debug(f"获取到会话Cookie: {session_cookie[:15]}...")
-
-                # 解码会话数据
-                try:
-                    serializer = URLSafeSerializer(config["secret_key"], "session")
-                    session_data = serializer.loads(session_cookie)
-
-                    # 输出会话数据，辅助调试
-                    logger.debug(f"解析会话数据成功: {session_data}")
-
-                    # 检查会话是否已过期
-                    expires = session_data.get("expires", 0)
-                    if expires < time.time():
-                        logger.debug(f"会话已过期: 当前时间 {time.time()}, 过期时间 {expires}")
-                        return None
-
-                    # 会话有效
-                    logger.debug(f"会话有效，用户: {session_data.get('username')}")
-                    return session_data.get("username")
-                except Exception as e:
-                    logger.error(f"解析会话数据失败: {str(e)}")
-                    return None
-            except Exception as e:
-                logger.error(f"检查认证失败: {str(e)}")
-                return None
-
-        # 然后注册路由，传入check_auth函数
-        register_reminder_routes(app, check_auth)
+        # 使用已设置的check_auth函数
+        register_reminder_routes(app, app.state.check_auth)
         logger.info("提醒API路由注册成功")
     except Exception as e:
         logger.error(f"注册提醒API路由失败: {str(e)}")
@@ -1089,7 +1072,7 @@ def setup_routes():
         from friend_circle_api import register_friend_circle_routes
 
         # 然后注册路由，传入check_auth函数和获取bot实例的函数
-        register_friend_circle_routes(app, check_auth, lambda: bot_instance)
+        register_friend_circle_routes(app, app.state.check_auth, lambda: bot_instance)
         logger.info("朋友圈API路由注册成功")
     except Exception as e:
         logger.error(f"注册朋友圈API路由失败: {str(e)}")
@@ -1102,7 +1085,7 @@ def setup_routes():
         """朋友圈页面"""
         # 检查认证状态
         try:
-            username = await check_auth(request)
+            username = await app.state.check_auth(request)
             if not username:
                 # 未认证，重定向到登录页面
                 return RedirectResponse(url="/login?next=/friend_circle", status_code=303)
@@ -1144,7 +1127,7 @@ def setup_routes():
         from .switch_account_api import register_switch_account_routes
 
         # 然后注册路由，传入check_auth函数和更新机器人状态的函数
-        register_switch_account_routes(app, check_auth, update_bot_status)
+        register_switch_account_routes(app, app.state.check_auth, update_bot_status)
         logger.info("切换账号API路由注册成功")
 
         # 导入并注册系统配置API路由
@@ -1159,7 +1142,7 @@ def setup_routes():
     # 导入并注册重启系统路由
     try:
         from .restart_api import register_restart_routes, restart_system
-        register_restart_routes(app, check_auth)
+        register_restart_routes(app, app.state.check_auth)
         logger.info("重启系统API路由注册成功")
     except Exception as e:
         logger.error(f"注册重启系统API路由失败: {str(e)}")
@@ -1169,7 +1152,7 @@ def setup_routes():
     # 导入并注册账号管理路由
     try:
         from .account_manager import register_account_manager_routes
-        register_account_manager_routes(app, check_auth, update_bot_status, restart_system)
+        register_account_manager_routes(app, app.state.check_auth, update_bot_status, restart_system)
         logger.info("账号管理API路由注册成功")
 
         # 添加账号管理页面路由
@@ -1178,7 +1161,7 @@ def setup_routes():
             """账号管理页面"""
             # 检查认证状态
             try:
-                username = await check_auth(request)
+                username = await app.state.check_auth(request)
                 if not username:
                     # 未认证，重定向到登录页面
                     return RedirectResponse(url="/login?next=/accounts", status_code=303)
@@ -1255,48 +1238,14 @@ def setup_routes():
             logger.error(f"登录处理出错: {str(e)}")
             return {"success": False, "error": f"登录处理出错: {str(e)}"}
 
-    # 检查会话认证
-    async def check_auth(request: Request):
-        """检查用户是否已认证"""
-        try:
-            # 从Cookie中获取会话数据
-            session_cookie = request.cookies.get("session")
-            if not session_cookie:
-                logger.debug("未找到会话Cookie")
-                return None
-
-            # 调试日志
-            logger.debug(f"获取到会话Cookie: {session_cookie[:15]}...")
-
-            # 解码会话数据
-            try:
-                serializer = URLSafeSerializer(config["secret_key"], "session")
-                session_data = serializer.loads(session_cookie)
-
-                # 输出会话数据，辅助调试
-                logger.debug(f"解析会话数据成功: {session_data}")
-
-                # 检查会话是否已过期
-                expires = session_data.get("expires", 0)
-                if expires < time.time():
-                    logger.debug(f"会话已过期: 当前时间 {time.time()}, 过期时间 {expires}")
-                    return None
-
-                # 会话有效
-                logger.debug(f"会话有效，用户: {session_data.get('username')}")
-                return session_data.get("username")
-            except Exception as e:
-                logger.error(f"解析会话数据失败: {str(e)}")
-                return None
-        except Exception as e:
-            logger.error(f"检查认证失败: {str(e)}")
-            return None
+    # 使用app.state.check_auth作为统一的认证函数
+    check_auth = app.state.check_auth
 
     def require_auth(func):
         """认证装饰器"""
         @wraps(func)
         async def wrapper(request: Request, *args, **kwargs):
-            check_auth(request)
+            await check_auth(request)
             return await func(request, *args, **kwargs)
         return wrapper
 

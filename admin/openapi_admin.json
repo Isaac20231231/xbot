@@ -1,0 +1,1319 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "xbot 后台管理 API 文档",
+    "description": "本文档涵盖 admin 目录下所有后台 API 接口，包含接口路径、请求参数、响应结构、认证方式等详细说明。所有接口均需认证（如未登录返回 401）。",
+    "version": "1.0.0"
+  },
+  "servers": [
+    { "url": "/api" }
+  ],
+  "paths": {
+    "/system/config": {
+      "get": {
+        "summary": "获取系统配置文件内容",
+        "description": "获取 main_config.toml 的全部内容，需认证。",
+        "tags": ["系统配置"],
+        "responses": {
+          "200": {
+            "description": "成功返回配置内容",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      },
+      "post": {
+        "summary": "保存系统配置文件内容",
+        "description": "保存 main_config.toml 内容，需认证。",
+        "tags": ["系统配置"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "config": { "type": "string", "description": "配置内容" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "保存成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/reminders": {
+      "get": {
+        "summary": "获取所有用户的所有提醒",
+        "description": "获取所有用户的提醒列表，需认证。",
+        "tags": ["提醒"],
+        "responses": {
+          "200": {
+            "description": "成功返回提醒列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "reminders": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Reminder" }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/reminders/{wxid}": {
+      "get": {
+        "summary": "获取指定用户的所有提醒",
+        "description": "通过 wxid 获取该用户的提醒列表，需认证。",
+        "tags": ["提醒"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "用户微信ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回提醒列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "reminders": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Reminder" }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      },
+      "post": {
+        "summary": "添加新提醒",
+        "description": "为指定 wxid 添加提醒，需认证。",
+        "tags": ["提醒"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "用户微信ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string", "description": "提醒内容" },
+                  "reminder_type": { "type": "string", "description": "提醒类型" },
+                  "reminder_time": { "type": "string", "description": "提醒时间" },
+                  "chat_id": { "type": "string", "description": "聊天ID" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "添加成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/reminders/{wxid}/{id}": {
+      "get": {
+        "summary": "获取提醒详情",
+        "description": "获取指定 wxid 和提醒 id 的详情，需认证。",
+        "tags": ["提醒"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "用户微信ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "提醒ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回提醒详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "reminder": { "$ref": "#/components/schemas/Reminder" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      },
+      "put": {
+        "summary": "更新提醒",
+        "description": "更新指定 wxid 和 id 的提醒内容，需认证。",
+        "tags": ["提醒"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "用户微信ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "提醒ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": { "type": "string" },
+                  "reminder_type": { "type": "string" },
+                  "reminder_time": { "type": "string" },
+                  "chat_id": { "type": "string" },
+                  "owner_id": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "更新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      },
+      "delete": {
+        "summary": "删除提醒",
+        "description": "删除指定 wxid 和 id 的提醒，需认证。",
+        "tags": ["提醒"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "用户微信ID"
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "提醒ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/accounts/list": {
+      "get": {
+        "summary": "获取账号列表",
+        "description": "获取所有已保存的微信账号信息，需认证。",
+        "tags": ["账号管理"],
+        "responses": {
+          "200": {
+            "description": "成功返回账号列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "accounts": {
+                          "type": "array",
+                          "items": { "$ref": "#/components/schemas/Account" }
+                        },
+                        "current": { "type": "string" }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/accounts/switch/{wxid}": {
+      "post": {
+        "summary": "切换账号",
+        "description": "切换到指定 wxid 的账号，需认证。",
+        "tags": ["账号管理"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "目标微信ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "切换成功或需扫码登录",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/accounts/refresh/{wxid}": {
+      "get": {
+        "summary": "刷新账号信息",
+        "description": "刷新指定 wxid 的账号信息，需认证。",
+        "tags": ["账号管理"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "目标微信ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "刷新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Account" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/accounts/{wxid}": {
+      "delete": {
+        "summary": "删除账号",
+        "description": "删除指定 wxid 的账号，需认证。不能删除当前登录账号。",
+        "tags": ["账号管理"],
+        "parameters": [
+          {
+            "name": "wxid",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "目标微信ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "删除成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/list": {
+      "get": {
+        "summary": "获取朋友圈列表",
+        "description": "获取当前或指定用户的朋友圈列表，支持分页、关键词、时间过滤，需认证。",
+        "tags": ["朋友圈"],
+        "parameters": [
+          { "name": "wxid", "in": "query", "schema": { "type": "string" }, "description": "用户微信ID" },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" }, "description": "搜索关键词" },
+          { "name": "date_start", "in": "query", "schema": { "type": "string" }, "description": "开始日期" },
+          { "name": "date_end", "in": "query", "schema": { "type": "string" }, "description": "结束日期" },
+          { "name": "refresh", "in": "query", "schema": { "type": "boolean" }, "description": "是否强制刷新" },
+          { "name": "max_id", "in": "query", "schema": { "type": "integer" }, "description": "分页ID" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "description": "页码" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "每页数量" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回朋友圈列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": { "type": "array", "items": { "$ref": "#/components/schemas/FriendCircle" } },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "last_id": { "type": "integer" },
+                        "has_more": { "type": "boolean" }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/system/restart": {
+      "post": {
+        "summary": "重启系统/容器",
+        "description": "重启当前系统或容器，需认证。",
+        "tags": ["系统"],
+        "responses": {
+          "200": {
+            "description": "重启命令已下发",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugins": {
+      "get": {
+        "summary": "获取 DOW 框架插件列表",
+        "description": "获取所有 DOW 框架插件信息，需认证。",
+        "tags": ["插件管理"],
+        "responses": {
+          "200": {
+            "description": "成功返回插件列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "plugins": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/all_plugins": {
+      "get": {
+        "summary": "获取所有插件列表",
+        "description": "获取原始框架和 DOW 框架的所有插件信息，需认证。",
+        "tags": ["插件管理"],
+        "responses": {
+          "200": {
+            "description": "成功返回插件列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "plugins": { "type": "array", "items": { "$ref": "#/components/schemas/Plugin" } }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugin_readme": {
+      "get": {
+        "summary": "获取 DOW 插件 README 内容",
+        "description": "获取指定插件的 README 文件内容，需认证。",
+        "tags": ["插件管理"],
+        "parameters": [
+          { "name": "plugin_id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "插件ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回 README 内容",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "readme": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugin_config_file": {
+      "get": {
+        "summary": "获取 DOW 插件配置文件路径",
+        "description": "获取指定插件的配置文件路径，需认证。",
+        "tags": ["插件管理"],
+        "parameters": [
+          { "name": "plugin_id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "插件ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回配置文件路径",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "config_file": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugin_config_content": {
+      "get": {
+        "summary": "获取 DOW 插件配置文件内容",
+        "description": "获取指定插件的配置文件内容，需认证。",
+        "tags": ["插件管理"],
+        "parameters": [
+          { "name": "plugin_id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "插件ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回配置文件内容",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "config_content": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugins/{plugin_id}/enable": {
+      "post": {
+        "summary": "启用 DOW 插件",
+        "description": "启用指定 plugin_id 的 DOW 插件，需认证。",
+        "tags": ["插件管理"],
+        "parameters": [
+          { "name": "plugin_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "插件ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "启用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/dow_plugins/{plugin_id}/disable": {
+      "post": {
+        "summary": "禁用 DOW 插件",
+        "description": "禁用指定 plugin_id 的 DOW 插件，需认证。",
+        "tags": ["插件管理"],
+        "parameters": [
+          { "name": "plugin_id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "插件ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "禁用成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/switch_account": {
+      "post": {
+        "summary": "切换微信账号",
+        "description": "删除 robot_stat.json 文件以切换微信账号，需认证。",
+        "tags": ["账号管理"],
+        "responses": {
+          "200": {
+            "description": "切换成功，系统将重启，需重新登录。",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/sync": {
+      "post": {
+        "summary": "同步朋友圈",
+        "description": "触发朋友圈数据同步，需认证。",
+        "tags": ["朋友圈"],
+        "responses": {
+          "200": {
+            "description": "同步成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/detail": {
+      "post": {
+        "summary": "获取朋友圈详情",
+        "description": "获取特定人的朋友圈详情，需认证。",
+        "tags": ["朋友圈"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wxid": { "type": "string", "description": "自己的微信ID" },
+                  "towxid": { "type": "string", "description": "目标用户微信ID" },
+                  "maxid": { "type": "integer", "description": "分页ID" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "成功返回朋友圈详情",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ObjectList": { "type": "array", "items": { "$ref": "#/components/schemas/FriendCircle" } },
+                        "raw_data": { "type": "object" }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/user/{wxid}": {
+      "get": {
+        "summary": "获取指定用户的朋友圈",
+        "description": "获取特定用户的朋友圈列表，支持分页，需认证。",
+        "tags": ["朋友圈"],
+        "parameters": [
+          { "name": "wxid", "in": "path", "required": true, "schema": { "type": "string" }, "description": "用户微信ID" },
+          { "name": "refresh", "in": "query", "schema": { "type": "boolean" }, "description": "是否强制刷新" },
+          { "name": "max_id", "in": "query", "schema": { "type": "integer" }, "description": "分页ID" },
+          { "name": "page", "in": "query", "schema": { "type": "integer" }, "description": "页码" },
+          { "name": "limit", "in": "query", "schema": { "type": "integer" }, "description": "每页数量" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回用户朋友圈",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "items": { "type": "array", "items": { "$ref": "#/components/schemas/FriendCircle" } },
+                        "total": { "type": "integer" },
+                        "page": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "last_id": { "type": "integer" },
+                        "has_more": { "type": "boolean" }
+                      }
+                    },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/like/{id}": {
+      "post": {
+        "summary": "点赞朋友圈",
+        "description": "给指定ID的朋友圈点赞，需认证。",
+        "tags": ["朋友圈"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "朋友圈ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "点赞成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/friend_circle/comment/{id}": {
+      "post": {
+        "summary": "评论朋友圈",
+        "description": "给指定ID的朋友圈发表评论，需认证。",
+        "tags": ["朋友圈"],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "朋友圈ID" },
+          { "name": "content", "in": "query", "required": true, "schema": { "type": "string" }, "description": "评论内容" }
+        ],
+        "responses": {
+          "200": {
+            "description": "评论成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "type": "object" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/files/list": {
+      "get": {
+        "summary": "获取文件列表",
+        "description": "获取指定目录下的文件列表，需认证。",
+        "tags": ["文件管理"],
+        "parameters": [
+          { "name": "path", "in": "query", "schema": { "type": "string" }, "description": "目标路径" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回文件列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "files": { "type": "array", "items": { "$ref": "#/components/schemas/FileInfo" } },
+                    "path": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/files/read": {
+      "get": {
+        "summary": "读取文件内容",
+        "description": "读取指定文件的内容，需认证。",
+        "tags": ["文件管理"],
+        "parameters": [
+          { "name": "path", "in": "query", "required": true, "schema": { "type": "string" }, "description": "文件路径" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回文件内容",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "content": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/files/write": {
+      "post": {
+        "summary": "写入文件内容",
+        "description": "写入内容到指定文件，需认证。",
+        "tags": ["文件管理"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": { "type": "string", "description": "文件路径" },
+                  "content": { "type": "string", "description": "文件内容" }
+                },
+                "required": ["path", "content"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "写入成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/send_message": {
+      "post": {
+        "summary": "发送消息",
+        "description": "向指定用户或群发送消息，需认证。",
+        "tags": ["消息"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "wxid": { "type": "string", "description": "目标微信ID" },
+                  "message": { "type": "string", "description": "消息内容" },
+                  "type": { "type": "string", "description": "消息类型，如text、image等" }
+                },
+                "required": ["wxid", "message"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "发送成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/contacts": {
+      "get": {
+        "summary": "获取联系人列表",
+        "description": "获取所有联系人信息，需认证。",
+        "tags": ["联系人"],
+        "responses": {
+          "200": {
+            "description": "成功返回联系人列表",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "contacts": { "type": "array", "items": { "$ref": "#/components/schemas/Contact" } },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/contacts/{wxid}/refresh": {
+      "get": {
+        "summary": "刷新指定联系人信息",
+        "description": "更新指定wxid的联系人信息，需认证。",
+        "tags": ["联系人"],
+        "parameters": [
+          { "name": "wxid", "in": "path", "required": true, "schema": { "type": "string" }, "description": "联系人微信ID" }
+        ],
+        "responses": {
+          "200": {
+            "description": "刷新成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "contact": { "$ref": "#/components/schemas/Contact" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/system/status": {
+      "get": {
+        "summary": "获取系统状态",
+        "description": "获取系统运行状态信息，需认证。",
+        "tags": ["系统"],
+        "responses": {
+          "200": {
+            "description": "成功返回系统状态",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "status": { "type": "string" },
+                    "uptime": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/system/logs": {
+      "get": {
+        "summary": "获取系统日志",
+        "description": "获取系统运行日志，支持分页和过滤，需认证。",
+        "tags": ["系统"],
+        "parameters": [
+          { "name": "lines", "in": "query", "schema": { "type": "integer" }, "description": "返回的日志行数" },
+          { "name": "level", "in": "query", "schema": { "type": "string" }, "description": "日志级别" }
+        ],
+        "responses": {
+          "200": {
+            "description": "成功返回系统日志",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "logs": { "type": "array", "items": { "type": "string" } },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "未认证" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "管理员登录",
+        "description": "管理员账号登录接口，获取认证凭证",
+        "tags": ["认证"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "username": { "type": "string", "description": "用户名" },
+                  "password": { "type": "string", "description": "密码" }
+                },
+                "required": ["username", "password"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "登录成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "token": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "认证失败" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "summary": "管理员登出",
+        "description": "管理员账号登出接口",
+        "tags": ["认证"],
+        "responses": {
+          "200": {
+            "description": "登出成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "message": { "type": "string" },
+                    "error": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Reminder": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "wxid": { "type": "string" },
+          "content": { "type": "string" },
+          "reminder_type": { "type": "string" },
+          "reminder_time": { "type": "string" },
+          "chat_id": { "type": "string" },
+          "is_done": { "type": "integer" },
+          "owner_id": { "type": "string" }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "wxid": { "type": "string" },
+          "nickname": { "type": "string" },
+          "alias": { "type": "string" },
+          "avatar_url": { "type": "string" },
+          "device_name": { "type": "string" },
+          "last_login": { "type": "integer" }
+        }
+      },
+      "FriendCircle": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "wxid": { "type": "string" },
+          "nickname": { "type": "string" },
+          "create_time": { "type": "integer" },
+          "content": { "type": "string" },
+          "media_list": { "type": "array", "items": { "type": "object" } }
+        }
+      },
+      "Plugin": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "version": { "type": "string" },
+          "description": { "type": "string" },
+          "enabled": { "type": "boolean" },
+          "framework": { "type": "string" }
+        }
+      },
+      "FileInfo": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "path": { "type": "string" },
+          "size": { "type": "integer" },
+          "is_dir": { "type": "boolean" },
+          "modified": { "type": "string" }
+        }
+      },
+      "Contact": {
+        "type": "object",
+        "properties": {
+          "wxid": { "type": "string" },
+          "nickname": { "type": "string" },
+          "remark": { "type": "string" },
+          "avatar": { "type": "string" },
+          "is_friend": { "type": "boolean" },
+          "is_chatroom": { "type": "boolean" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      },
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  },
+  "security": [
+    {
+      "cookieAuth": []
+    },
+    {
+      "bearerAuth": []
+    }
+  ]
+} 

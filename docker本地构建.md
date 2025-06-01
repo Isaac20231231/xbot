@@ -18,7 +18,7 @@ cd 项目根目录路径  # 例如: cd /path/to/xbot
 
 ### 2. 确保 entrypoint.sh 有执行权限
 
-在环境下，需要手动赋予 entrypoint.sh 执行权限：
+在 Windows 环境下，需要手动赋予 entrypoint.sh 执行权限：
 
 **方法 1: 使用 Git Bash (推荐)**
 
@@ -135,7 +135,138 @@ Connection refused to Redis on 127.0.0.1:6379
    ```
    然后在 docker-compose.yml 中使用该镜像
 
-## 五、其他有用的命令
+## 五、Linux 平台构建指南
+
+Linux 平台是 Docker 的原生环境，构建过程通常比 Windows 更顺畅。
+
+### 1. 安装 Docker 和 Docker Compose
+
+**Ubuntu/Debian:**
+
+```bash
+# 安装 Docker
+sudo apt update
+sudo apt install docker.io
+
+# 安装 Docker Compose
+sudo apt install docker-compose
+
+# 将当前用户加入 docker 组（避免每次都需要 sudo）
+sudo usermod -aG docker $USER
+# 需要重新登录才能生效
+```
+
+**CentOS/RHEL:**
+
+```bash
+# 安装 Docker
+sudo yum install -y yum-utils
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install docker-ce docker-ce-cli containerd.io
+
+# 安装 Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# 启动 Docker 服务
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# 将当前用户加入 docker 组
+sudo usermod -aG docker $USER
+# 需要重新登录才能生效
+```
+
+### 2. 设置文件权限
+
+在 Linux 平台，设置文件权限更为直观：
+
+```bash
+# 只给 entrypoint.sh 添加执行权限
+chmod +x entrypoint.sh
+
+# 或者，如果需要给所有脚本添加执行权限
+find . -name "*.sh" -exec chmod +x {} \;
+```
+
+### 3. 其他 Linux 特有优化
+
+1. **设置内核参数**：对于高负载场景，可以调整以下参数：
+
+   ```bash
+   # 在 /etc/sysctl.conf 中添加
+   net.core.somaxconn=4096
+   vm.max_map_count=262144
+   ```
+
+   然后执行 `sudo sysctl -p` 使设置生效
+
+2. **清理 Docker 资源**：
+
+   ```bash
+   # 删除所有停止的容器
+   docker container prune -f
+
+   # 清理未使用的镜像
+   docker image prune -f
+
+   # 清理未使用的卷
+   docker volume prune -f
+   ```
+
+## 六、macOS 平台构建指南
+
+macOS 平台使用 Docker Desktop 提供 Docker 环境。
+
+### 1. 安装 Docker Desktop
+
+1. 下载并安装 [Docker Desktop for Mac](https://www.docker.com/products/docker-desktop)
+2. 启动 Docker Desktop 应用程序
+3. 等待 Docker 引擎完全启动（状态栏图标变为静态）
+
+### 2. 性能优化
+
+macOS 上的 Docker 使用虚拟化技术，可能存在性能问题，可以通过以下设置优化：
+
+1. **增加资源分配**：
+
+   - 打开 Docker Desktop
+   - 点击右上角齿轮图标进入设置
+   - 在 "Resources" 中，根据你的电脑配置增加 CPU、内存和交换空间的分配
+
+2. **优化文件挂载性能**：
+   - 对于 Intel Mac：在 Docker Desktop 设置的 "File sharing" 部分，只添加必要的目录
+   - 对于 M1/M2 Mac：使用 VirtioFS（在 Docker Desktop 设置的 "Experimental features" 中启用）
+
+### 3. 文件权限设置
+
+macOS 与 Linux 类似，可以直接使用命令行设置权限：
+
+```bash
+# 设置 entrypoint.sh 执行权限
+chmod +x entrypoint.sh
+
+# 如果有多个脚本文件需要执行权限
+find . -name "*.sh" -type f -exec chmod +x {} \;
+```
+
+### 4. Mac 特有问题处理
+
+1. **时区问题**：Mac 上的 Docker 容器可能会遇到时区不同步问题
+
+   ```yaml
+   # 在 docker-compose.yml 中添加环境变量
+   environment:
+     - TZ=Asia/Shanghai
+   ```
+
+2. **文件系统大小写敏感问题**：macOS 默认文件系统大小写不敏感，可能导致问题
+   ```bash
+   # 检查是否有文件名大小写冲突
+   find . -type f | grep -i [文件名] | sort
+   ```
+
+## 七、其他有用的命令
 
 ```bash
 # 查看正在运行的容器
@@ -154,7 +285,7 @@ docker-compose down
 docker-compose restart
 ```
 
-## 六、配置说明
+## 八、配置说明
 
 ### Dockerfile 重点说明
 

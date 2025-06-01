@@ -38,6 +38,7 @@ class WechatAPIConfig:
     redis_password: str = ""
     redis_db: int = 0
     ws_url: str = ""
+    message_mode: str = "ws"
 
 
 @dataclass
@@ -318,6 +319,7 @@ class ConfigManager:
                 ),
                 redis_db=api_config.get("redis-db", config.wechat_api.redis_db),
                 ws_url=api_config.get("ws-url", config.wechat_api.ws_url),
+                message_mode=api_config.get("message-mode", config.wechat_api.message_mode),
             )
 
         # 管理后台配置

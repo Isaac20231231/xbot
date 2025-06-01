@@ -130,6 +130,38 @@ async def message_consumer(xybot, redis, message_db):
         except Exception as e:
             logger.error(f"消息处理异常: {e}")
 
+async def http_poll_messages(xybot, api_host, api_port, wxid, redis, message_db):
+    """通过HTTP API轮询拉取消息"""
+    import time
+    url = f"http://{api_host}:{api_port}/api/Msg/Sync"
+    synckey = ""
+    while True:
+        try:
+            payload = {"Scene": 0, "Synckey": synckey, "Wxid": wxid}
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, json=payload) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        addmsgs = data.get("Data", {}).get("AddMsgs", [])
+                        for message in addmsgs:
+                            await message_db.save_message(
+                                msg_id=message.get("MsgId") or message.get("msgId") or 0,
+                                new_msg_id=message.get("NewMsgId") or message.get("newMsgId") or 0,
+                                sender_wxid=message.get("FromUserName", {}).get("string", ""),
+                                from_wxid=message.get("ToUserName", {}).get("string", ""),
+                                msg_type=message.get("MsgType") or message.get("category") or 0,
+                                content=message.get("Content", {}).get("string", ""),
+                                is_group=False
+                            )
+                            await redis.rpush(QUEUE_NAME, json.dumps(message, ensure_ascii=False))
+                            logger.info(f"[HTTP] 消息已入队到队列 {QUEUE_NAME}，消息ID: {message.get('MsgId') or message.get('msgId')}")
+                        # 更新synckey
+                        if "Synckey" in data:
+                            synckey = data["Synckey"]
+            await asyncio.sleep(0.05)
+        except Exception as e:
+            logger.error(f"HTTP拉取消息异常: {e}")
+            await asyncio.sleep(1)
 
 async def bot_core():
     # 设置工作目录
@@ -693,8 +725,19 @@ async def bot_core():
     for _ in range(NUM_CONSUMERS):
         asyncio.create_task(message_consumer(xybot, redis, message_db))
 
-    # 启动 WebSocket 消息监听
-    await listen_ws_messages(xybot, ws_url, redis, message_db)
+    # 选择消息读取方式
+    message_mode = getattr(app_config.wechat_api, "message_mode", None) \
+        or getattr(app_config.wechat_api, "messageMode", None) \
+        or config.get("WechatAPIServer", {}).get("message-mode", "ws")
+    logger.info(f"消息读取模式: {message_mode}")
+
+    if message_mode and message_mode.lower() == "http":
+        api_host = config.get("WechatAPIServer", {}).get("host", "127.0.0.1")
+        api_port = config.get("WechatAPIServer", {}).get("port", 9011)
+        wxid = bot.wxid
+        await http_poll_messages(xybot, api_host, api_port, wxid, redis, message_db)
+    else:
+        await listen_ws_messages(xybot, ws_url, redis, message_db)
 
     # 返回机器人实例（此处不会执行到，因为上面的无限循环）
     return xybot
@@ -731,11 +774,12 @@ async def listen_ws_messages(xybot, ws_url, redis, message_db):
                                     # 本地存储
                                     await message_db.save_message(
                                         msg_id=message.get("MsgId") or message.get("msgId") or 0,
+                                        new_msg_id=message.get("NewMsgId") or message.get("newMsgId") or 0,
                                         sender_wxid=message.get("FromUserName", {}).get("string", ""),
                                         from_wxid=message.get("ToUserName", {}).get("string", ""),
                                         msg_type=message.get("MsgType") or message.get("category") or 0,
                                         content=message.get("Content", {}).get("string", ""),
-                                        is_group=False  # 可根据业务调整
+                                        is_group=False
                                     )
                                     # 入队
                                     await redis.rpush(QUEUE_NAME, json.dumps(message, ensure_ascii=False))
@@ -763,6 +807,7 @@ async def listen_ws_messages(xybot, ws_url, redis, message_db):
                                     # 本地存储
                                     await message_db.save_message(
                                         msg_id=addmsg.get("MsgId") or 0,
+                                        new_msg_id=addmsg.get("NewMsgId") or 0,
                                         sender_wxid=addmsg.get("FromUserName", {}).get("string", ""),
                                         from_wxid=addmsg.get("ToUserName", {}).get("string", ""),
                                         msg_type=addmsg.get("MsgType") or 0,

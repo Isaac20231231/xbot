@@ -1,0 +1,293 @@
+openapi: 3.0.3
+info:
+  title: xbot 后台管理 API 文档
+  description: |
+    本文档涵盖 admin 目录下所有后台 API 接口，包含接口路径、请求参数、响应结构、认证方式等详细说明。
+    所有接口均需认证（如未登录返回 401）。
+  version: 1.0.0
+servers:
+  - url: /api
+paths:
+  /system/config:
+    get:
+      summary: 获取系统配置文件内容
+      description: 获取 main_config.toml 的全部内容，需认证。
+      tags: [系统配置]
+      responses:
+        "200":
+          description: 成功返回配置内容
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: string
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+    post:
+      summary: 保存系统配置文件内容
+      description: 保存 main_config.toml 内容，需认证。
+      tags: [系统配置]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                config:
+                  type: string
+                  description: 配置内容
+      responses:
+        "200":
+          description: 保存成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+  /reminders:
+    get:
+      summary: 获取所有用户的所有提醒
+      description: 获取所有用户的提醒列表，需认证。
+      tags: [提醒]
+      responses:
+        "200":
+          description: 成功返回提醒列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  reminders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Reminder"
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+  /reminders/{wxid}:
+    get:
+      summary: 获取指定用户的所有提醒
+      description: 通过 wxid 获取该用户的提醒列表，需认证。
+      tags: [提醒]
+      parameters:
+        - name: wxid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 用户微信ID
+      responses:
+        "200":
+          description: 成功返回提醒列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  reminders:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Reminder"
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+    post:
+      summary: 添加新提醒
+      description: 为指定 wxid 添加提醒，需认证。
+      tags: [提醒]
+      parameters:
+        - name: wxid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 用户微信ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                  description: 提醒内容
+                reminder_type:
+                  type: string
+                  description: 提醒类型
+                reminder_time:
+                  type: string
+                  description: 提醒时间
+                chat_id:
+                  type: string
+                  description: 聊天ID
+      responses:
+        "200":
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+  /reminders/{wxid}/{id}:
+    get:
+      summary: 获取提醒详情
+      description: 获取指定 wxid 和提醒 id 的详情，需认证。
+      tags: [提醒]
+      parameters:
+        - name: wxid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 用户微信ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 提醒ID
+      responses:
+        "200":
+          description: 成功返回提醒详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  reminder:
+                    $ref: "#/components/schemas/Reminder"
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+    put:
+      summary: 更新提醒
+      description: 更新指定 wxid 和 id 的提醒内容，需认证。
+      tags: [提醒]
+      parameters:
+        - name: wxid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 用户微信ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 提醒ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+                reminder_type:
+                  type: string
+                reminder_time:
+                  type: string
+                chat_id:
+                  type: string
+                owner_id:
+                  type: string
+      responses:
+        "200":
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+    delete:
+      summary: 删除提醒
+      description: 删除指定 wxid 和 id 的提醒，需认证。
+      tags: [提醒]
+      parameters:
+        - name: wxid
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 用户微信ID
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: 提醒ID
+      responses:
+        "200":
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: string
+        "401":
+          description: 未认证
+# ... 账号管理、朋友圈、插件、系统等其它接口会继续补全 ...
+components:
+  schemas:
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: integer
+        wxid:
+          type: string
+        content:
+          type: string
+        reminder_type:
+          type: string
+        reminder_time:
+          type: string
+        chat_id:
+          type: string
+        is_done:
+          type: integer
+        owner_id:
+          type: string

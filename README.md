@@ -1,4 +1,4 @@
-# 🤖 XXXBot 机器人项目 🤖
+# 🤖 xbot 机器人项目 🤖
 
 > ## ⚠️ 免责声明
 >
@@ -8,7 +8,7 @@
 
 ## 📝 项目概述
 
-XXXBot 是一个基于微信的智能机器人系统，通过整合多种 API 和功能，提供了丰富的交互体验。本系统包含管理后台界面，支持插件扩展，具备联系人管理、文件管理、系统状态监控等功能，同时与人工智能服务集成，提供智能对话能力。系统支持多种微信接口，包括 PAD 协议和 WeChatAPI，可根据需要灵活切换。
+xbot 是一个基于微信的智能机器人系统，通过整合多种 API 和功能，提供了丰富的交互体验。本系统包含管理后台界面，支持插件扩展，具备联系人管理、文件管理、系统状态监控等功能，同时与人工智能服务集成，提供智能对话能力。系统支持多种微信接口，包括 PAD 协议和 WeChatAPI，可根据需要灵活切换。
 
 ### 🔄 双协议支持与框架模式
 
@@ -18,7 +18,7 @@ XXXBot 是一个基于微信的智能机器人系统，通过整合多种 API �
 
 - **pad 协议**
 - **ipad 协议**
-- **mac**
+- **mac 协议**
 
 #### 框架模式支持
 
@@ -42,7 +42,7 @@ version = "ipad"  # 可选值：pad, ipad, Mac
 <table>
   <tr>
     <td width="50%">
-      <h3>💬 加入 XXXBot 交流群</h3>
+      <h3>💬 加入 xbot 交流群</h3>
       <p>扫描右侧的二维码加入官方交流群，获取：</p>
       <ul>
         <li>💡 <strong>最新功能更新</strong>和使用技巧</li>
@@ -53,11 +53,7 @@ version = "ipad"  # 可选值：pad, ipad, Mac
     </td>
     <td width="25%" align="center">
       <img src="https://github.com/user-attachments/assets/39f6eff3-bcaa-4bdf-87f2-fd887c26a4e7" alt="关注公众号进群" width="220">
-      <p><strong>XXXBot 交流群</strong></p>
-    </td>
-    <td width="25%" align="center">
-      <img src="https://github.com/user-attachments/assets/2dde3b46-85a1-4f22-8a54-3928ef59b85f" alt="感谢赞助" width="220">
-      <p><strong>感谢赞助</strong></p>
+      <p><strong>xbot 交流群</strong></p>
     </td>
   </tr>
 </table>
@@ -114,8 +110,8 @@ version = "ipad"  # 可选值：pad, ipad, Mac
 1. **克隆代码库**
 
    ```bash
-   git clone https://github.com/NanSsye/xxxbot-pad.git
-   cd xxxbot-pad
+   git clone https://github.com/NanSsye/xbot.git
+   cd xbot
    ```
 
 2. **安装依赖**
@@ -322,14 +318,15 @@ type = "wechat"
 ```bash
 # 克隆代码库
 [WechatAPIServer]
-host = "192.168.6.19"      # WechatAPI服务器地址，为xbot-wechat所在主机的ip地址
+host = "127.0.0.1"      # WechatAPI服务器地址，为xbot-wechat所在主机的ip地址
 port = 9011                # WechatAPI服务器端口，默认9011
 mode = "release"           # 运行模式：release(生产环境)，debug(调试模式)
 redis-host = "127.0.0.1"   # Redis服务器地址，本地使用127.0.0.1
 redis-port = 6379          # Redis端口，使用系统Redis服务的默认端口
 redis-password = ""        # Redis密码，如果有设置密码则填写
 redis-db = 0               # Redis数据库编号，默认0
-ws-url = "ws://192.168.6.19:9088/ws"  #为xbot-wechat所在主机ip+9088端口
+ws-url = "ws://127.0.0.1:9088/ws"  #为xbot-wechat所在主机ip+9088端口
+message-mode = "ws"        # 可选 ws 或 http，决定消息读取方式
 ```
 
 ### 🔍 访问后台

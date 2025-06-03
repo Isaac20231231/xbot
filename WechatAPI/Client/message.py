@@ -381,51 +381,38 @@ class MessageMixin(WechatAPIClientBase):
 
         return closest_rate
 
-    async def send_link_message(self, wxid: str, url: str, title: str = "", description: str = "",
-                                thumb_url: str = "") -> tuple[str, int, int]:
-        """发送链接消息。
-
-        Args:
-            wxid (str): 接收人wxid
-            url (str): 跳转链接
-            title (str, optional): 标题. Defaults to "".
-            description (str, optional): 描述. Defaults to "".
-            thumb_url (str, optional): 缩略图链接. Defaults to "".
-
-        Returns:
-            tuple[str, int, int]: 返回(ClientMsgid, CreateTime, NewMsgId)
-
-        Raises:
-            UserLoggedOut: 未登录时调用
-            BanProtection: 登录新设备后4小时内操作
-            根据error_handler处理错误
-        """
-        return await self._queue_message(self._send_link_message, wxid, url, title, description, thumb_url)
-
-    async def _send_link_message(self, wxid: str, url: str, title: str = "", description: str = "",
-                                 thumb_url: str = "") -> tuple[int, int, int]:
+    async def send_link_message(self, wxid: str, url: str = "", title: str = "", description: str = "", thumb_url: str = "") -> dict:
+        """发送分享链接消息（适配官方接口）"""
         if not self.wxid:
             raise UserLoggedOut("请先登录")
         elif not self.ignore_protect and protector.check(14400):
             raise BanProtection("风控保护: 新设备登录后4小时内请挂机")
 
-        async with aiohttp.ClientSession() as session:
-            json_param = {"Wxid": self.wxid, "ToWxid": wxid, "Url": url, "Title": title, "Desc": description,
-                          "ThumbUrl": thumb_url}
-            response = await session.post(f'http://{self.ip}:{self.port}/api/Msg/ShareLink', json=json_param)
-            json_resp = await response.json()
+        # 组装xml内容
+        xml = f"""
+        <msg>
+          <appmsg appid='' sdkver=''>
+            <title>{title}</title>
+            <des>{description}</des>
+            <action></action>
+            <type>5</type>
+            <showtype>0</showtype>
+            <url>{url}</url>
+            <thumburl>{thumb_url}</thumburl>
+          </appmsg>
+        </msg>
+        """.strip()
 
-            if json_resp.get("Success"):
-                logger.info("发送链接消息: 对方wxid:{} 链接:{} 标题:{} 描述:{} 缩略图链接:{}",
-                            wxid,
-                            url,
-                            title,
-                            description,
-                            thumb_url)
-                data = json_resp.get("Data")
-                return data.get("clientMsgId"), data.get("createTime"), data.get("newMsgId")
-            else:
-                self.error_handler(json_resp)
+        json_param = {
+            "ToWxid": wxid,
+            "Type": 0,
+            "Wxid": self.wxid,
+            "Xml": xml
+        }
+
+        async with aiohttp.ClientSession() as session:
+            response = await session.post(f'http://{self.ip}:{self.port}/api/Msg/ShareLink', json=json_param)
+            return await response.json()
 
     async def _send_location_message(self, wxid: str, Infourl: str, Label: str = "", Poiname: str = "",
                                  Scale: int = 0,X: int = 0,Y: int = 0) -> tuple[int, int, int]:

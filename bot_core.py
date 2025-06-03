@@ -597,7 +597,7 @@ async def bot_core():
 
     # 初始化机器人
     xybot = XYBot(bot)
-    xybot.update_profile(bot.wxid, bot.nickname, bot.alias, bot.phone)
+    await xybot.update_profile(bot.wxid, bot.nickname, bot.alias, bot.phone)
 
     # 设置机器人实例到管理后台
     set_bot_instance(xybot)

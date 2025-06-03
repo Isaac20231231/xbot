@@ -247,25 +247,26 @@ async def main():
             logger.warning(f"日志管理器初始化失败，使用默认日志: {e}")
         
         # 初始化性能监控系统（第二阶段优化）
-        try:
-            from utils.performance_monitor import init_performance_monitor, start_performance_monitoring
-            performance_config = {
-                "enabled": app_config.performance.enabled,
-                "monitoring_interval": app_config.performance.monitoring_interval,
-                "max_history_size": app_config.performance.max_history_size,
-                "cpu_alert_threshold": app_config.performance.cpu_alert_threshold,
-                "memory_alert_threshold": app_config.performance.memory_alert_threshold,
-                "memory_low_threshold_mb": app_config.performance.memory_low_threshold_mb,
-            }
-            performance_monitor = init_performance_monitor(performance_config)
-            logger.info("🔧 性能监控系统已初始化")
+        # try:
+        #     from utils.performance_monitor import init_performance_monitor, start_performance_monitoring
+        #     performance_config = {
+        #         "enabled": app_config.performance.enabled,
+        #         "monitoring_interval": app_config.performance.monitoring_interval,
+        #         "max_history_size": app_config.performance.max_history_size,
+        #         "cpu_alert_threshold": app_config.performance.cpu_alert_threshold,
+        #         "memory_alert_threshold": app_config.performance.memory_alert_threshold,
+        #         "memory_low_threshold_mb": app_config.performance.memory_low_threshold_mb,
+        #     }
+        #     performance_monitor = init_performance_monitor(performance_config)
+        #     logger.info("🔧 性能监控系统已初始化")
             
-            # 启动性能监控（异步）
-            if app_config.performance.enabled:
-                asyncio.create_task(start_performance_monitoring())
-                logger.info("📊 性能监控已启动")
-        except Exception as e:
-            logger.warning(f"性能监控系统初始化失败: {e}")
+        #     # 启动性能监控（异步）
+        #     if app_config.performance.enabled:
+        #         asyncio.create_task(start_performance_monitoring())
+        #         logger.info("📊 性能监控已启动")
+        # except Exception as e:
+        #     logger.warning(f"性能监控系统初始化失败: {e}")
+        logger.info("🔧 性能监控系统已禁用，降低内存使用")
 
     except Exception as e:
         logger.error(f"❌ 配置系统发生未知错误: {e}")

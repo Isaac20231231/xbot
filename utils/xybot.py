@@ -42,15 +42,9 @@ class XYBot:
                 f"配置文件 {config_path} 存在，大小: {os.path.getsize(config_path)} 字节"
             )
             try:
-                import aiofiles
-                # 异步读取配置文件
-                async def load_config():
-                    async with aiofiles.open(config_path, "rb") as f:
-                        content = await f.read()
-                        return tomllib.loads(content.decode())
-                
-                # 使用同步方式运行异步函数，因为__init__不能是异步的
-                main_config = asyncio.run(load_config())
+                # 使用同步方式读取配置文件
+                with open(config_path, "rb") as f:
+                    main_config = tomllib.load(f)
                 # 打印配置文件的所有键
                 logger.debug(f"配置文件的所有键: {list(main_config.keys())}")
             except Exception as e:
@@ -157,15 +151,10 @@ class XYBot:
                     # 读取协议版本配置
                     try:
                         import tomllib
-                        import aiofiles
-
-                        async def read_config():
-                            async with aiofiles.open("main_config.toml", "rb") as f:
-                                content = await f.read()
-                                return tomllib.loads(content.decode())
                         
-                        # 创建并等待协程完成
-                        config = await read_config()
+                        # 使用同步方式读取配置文件
+                        with open("main_config.toml", "rb") as f:
+                            config = tomllib.load(f)
                         protocol_version = config.get("Protocol", {}).get(
                             "version", "849"
                         )

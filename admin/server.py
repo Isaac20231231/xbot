@@ -1730,7 +1730,7 @@ def setup_routes():
 
             try:
                 # 构建ZIP下载链接
-                zip_url = get_github_url("https://github.com/NanSsye/xxxbot-pad/archive/refs/heads/main.zip")
+                zip_url = get_github_url("https://github.com/NanSsye/xbot/archive/refs/heads/main.zip")
                 logger.info(f"正在从 {zip_url} 下载最新代码...")
 
                 # 下载ZIP文件

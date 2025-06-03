@@ -118,7 +118,7 @@ except ImportError as e:
 
 
 NUM_CONSUMERS = 1  # 可根据需要调整并发消费者数量
-QUEUE_NAME = 'xxxbot'  # 自定义队列名
+QUEUE_NAME = 'xbot'  # 自定义队列名
 
 async def message_consumer(xybot, redis, message_db):
     while True:

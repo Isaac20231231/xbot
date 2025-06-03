@@ -31,5 +31,5 @@ fi
 
 sleep 3
 
-echo "启动XXXBot主应用..."
+echo "启动xbot主应用..."
 exec python /app/main.py

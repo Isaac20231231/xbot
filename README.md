@@ -295,8 +295,8 @@ type = "wechat"
 
    ```bash
    # 克隆代码库
-   git clone https://github.com/NanSsye/xxxbot-pad.git
-   cd xxxbot-pad
+   git clone https://github.com/NanSsye/xbot.git
+   cd xbot
 
    # 启动服务
    docker-compose up -d
@@ -484,7 +484,7 @@ option_2 = 123
 6. **Docker 部署问题** 🐳
 
    - 确认 Docker 容器是否正常运行：`docker ps`
-   - 查看容器日志：`docker logs xxxbot-pad`
+   - 查看容器日志：`docker logs xbot`
    - 重启容器：`docker-compose restart`
    - 查看卷数据：`docker volume ls`
    - 💡 注意：Docker 容器内会自动启动 PAD 和 Redis 服务，无需手动启动
@@ -496,12 +496,6 @@ option_2 = 123
    - 确认服务器正常运行在 9090 端口
    - 尝试使用默认账号密码: admin/admin1234
    - 检查防火墙设置是否阻止了端口访问
-
-8. **DOW 框架不工作** 🔄
-   - 确认 `main_config.toml` 中的 `Framework.type` 设置正确
-   - 在 dual 模式下，确保原始框架已成功登录
-   - 检查回调 URL 配置是否正确(`http://127.0.0.1:8088/wx849/callback`)
-   - 验证日志中是否有回调成功的信息
 
 ## 🏗️ 技术架构
 
@@ -517,7 +511,7 @@ option_2 = 123
 ## 📂 项目结构
 
 ```
-XXXBot/
+xbot/
 ├── admin/                  # 管理后台
 │   ├── static/             # 静态资源（前端 JS/CSS/图片等）
 │   ├── templates/          # HTML 模板

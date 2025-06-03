@@ -417,7 +417,7 @@ if __name__ == "__main__":
 
     os.makedirs("logs", exist_ok=True)
     logger.add(
-        "logs/xxxbot_{time}.log",
+        "logs/xbot_{time}.log",
         rotation="1 day",
         encoding="utf-8",
         retention="10 days",

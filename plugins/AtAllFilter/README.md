@@ -70,5 +70,5 @@ log_filtered = false  # 设置为false禁用日志记录
 
 ## 作者信息
 
-- 作者: xxxbot-pad
+- 作者: xbot
 - 版本: 1.0.0

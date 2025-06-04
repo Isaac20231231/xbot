@@ -10,6 +10,14 @@
 
 xbot 是一个基于微信的智能机器人系统，通过整合多种 API 和功能，提供了丰富的交互体验。本系统包含管理后台界面，支持插件扩展，具备联系人管理、文件管理、系统状态监控等功能，同时与人工智能服务集成，提供智能对话能力。系统支持多种微信接口，包括 PAD 协议和 WeChatAPI，可根据需要灵活切换。
 
+## 📚 项目文档
+
+- [**系统架构文档**](docs/系统架构文档.md) - 系统组件和架构详解
+- [**插件开发指南**](docs/插件开发指南.md) - 如何开发自定义插件
+- [**配置指南**](docs/配置指南.md) - 系统配置详细说明
+- [**用户手册**](docs/用户手册.md) - 用户使用指南
+- [**API 文档**](docs/API文档.md) - 系统 API 接口文档
+
 ### 🔄 双协议支持与框架模式
 
 本系统现已支持多种微信协议：
@@ -361,92 +369,11 @@ wakeup-words = ["你好小d", "嘿小d"]
 
 ## 📖 使用指南
 
-### 👑 管理员命令
-
-- 登录管理后台查看各项功能
-- 通过微信直接向机器人发送命令管理
-
-### 💬 用户交互
-
-- 📲 **私聊模式**：直接向机器人发送消息
-- 👥 **群聊模式**：
-  - 👋 @机器人 + 问题
-  - 💬 使用特定命令如 `ai 问题`
-  - 🔔 使用唤醒词如 `你好小d 问题`
-
-### 📞 聊天室功能
-
-- 👋 **加入聊天**：@机器人或使用命令
-- **查看状态**：发送"查看状态"
-- **暂时离开**：发送"暂时离开"
-- **回来**：发送"回来了"
-- **退出聊天**：发送"退出聊天"
-- **查看统计**：发送"我的统计"
-- **聊天排行**：发送"聊天室排行"
-
-### 📷 图片和语音
-
-- 发送图片和文字组合进行图像相关提问
-- [引用图片识别功能](引用图片识别功能说明.md)：通过引用图片消息让 AI 分析图片内容
-- 发送语音自动识别并回复
-- 语音回复可根据配置自动开启
+详细使用指南请参考[用户手册](docs/用户手册.md)。
 
 ## 🔌 插件开发
 
-### 📁 插件目录结构
-
-```
-plugins/
-  ├── YourPlugin/
-  │   ├── __init__.py
-  │   ├── main.py
-  │   ├── config.toml
-  │   └── README.md
-```
-
-### 📝 基本插件模板
-
-```python
-from utils.plugin_base import PluginBase
-from WechatAPI import WechatAPIClient
-from utils.decorators import *
-
-class YourPlugin(PluginBase):
-    description = "插件描述"
-    author = "作者名称"
-    version = "1.0.0"
-
-    def __init__(self):
-        super().__init__()
-        # 初始化代码
-
-    @on_text_message(priority=10)
-    async def handle_text(self, bot: WechatAPIClient, message: dict):
-        # 处理文本消息
-        pass
-```
-
-### 📋 插件配置文件示例
-
-```toml
-[basic]
-# 是否启用插件
-enable = true
-# 全局优先级设置 (0-99)，值越高优先级越高
-priority = 80
-
-[feature_1]
-# 功能1的配置
-option_1 = "value"
-option_2 = 123
-```
-
-**优先级设置说明**：
-
-- 可以在装饰器中设置各个处理函数的优先级：`@on_text_message(priority=10)`
-- 也可以在配置文件中设置全局优先级，这将覆盖所有装饰器中的优先级
-- 优先级范围是 0-99，默认为 50，值越高优先级越高
-- 如果没有设置全局优先级，则使用各个处理函数装饰器中设置的优先级
+想要开发自己的插件？请参考[插件开发指南](docs/插件开发指南.md)了解详细信息。
 
 ## 🔴 常见问题
 
@@ -499,42 +426,7 @@ option_2 = 123
 
 ## 🏗️ 技术架构
 
-- **后端**：Python FastAPI
-- **前端**：Bootstrap, Chart.js, AOS
-- **数据库**：SQLite (aiosqlite)
-- **缓存**：Redis
-- **WX 接口**：PAD 协议或 WeChatAPI
-- **外部服务**：Dify API，Google Speech-to-Text
-- **容器化**：Docker
-- **Web 服务**：默认端口 9090，默认账号 admin/admin123
-
-## 📂 项目结构
-
-```
-xbot/
-├── admin/                  # 管理后台
-│   ├── static/             # 静态资源（前端 JS/CSS/图片等）
-│   ├── templates/          # HTML 模板
-│   └── friend_circle_api.py# 朋友圈相关 API
-│
-├── plugins/                # 插件目录（功能扩展）
-│   ├── Dify/               # Dify 插件
-│   ├── Menu/               # 菜单插件
-│   ├── SignIn/             # 签到插件
-│   └── YujieSajiao/        # 语音撒娇插件
-│
-├── database/               # 数据库相关（如模型、迁移等）
-├── utils/                  # 工具函数与通用模块
-├── WechatAPI/              # 微信 API 接口封装
-│
-│
-├── app.py                  # 主应用入口（如 FastAPI 启动）
-├── main.py                 # 机器人主程序入口
-├── entrypoint.sh           # Docker 启动脚本
-├── Dockerfile              # Docker 构建文件
-├── requirements.txt        # 依赖列表
-└── main_config.toml        # 主配置文件
-```
+详细架构信息请参考[系统架构文档](docs/系统架构文档.md)。
 
 ## 📜 协议和许可
 
@@ -609,36 +501,6 @@ xbot/
     </td>
     <td width="50%" align="center">
       <img src="https://github.com/user-attachments/assets/5aaa5450-7c13-43a1-9310-471af304408d" width="400">
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="https://github.com/user-attachments/assets/267b8be9-8287-4ab8-8ad7-e01e17099296" width="400">
-    </td>
-    <td width="50%" align="center">
-      <img src="https://github.com/user-attachments/assets/adfee5d7-dbfb-4ab4-9f7d-0e1321093cd3" width="400">
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <img src="https://github.com/user-attachments/assets/05e8f4c0-6ab2-4c60-b168-36bb62d40058" width="400">
-    </td>
-    <td width="50%" align="center">
-      <img src="https://github.com/user-attachments/assets/5c77ef23-85d6-40f3-9f93-920f115821b9" width="400">
-    </td>
-  </tr>
-</table>
-
-<table>
-  <tr>
-    <td width="33%" align="center">
-      <img src="https://github.com/user-attachments/assets/f61afa92-d7b3-4445-9cd1-1d72aa35acb9" width="260">
-    </td>
-    <td width="33%" align="center">
-      <img src="https://github.com/user-attachments/assets/81473990-dc0e-435a-8b45-0732d92d3201" width="260">
-    </td>
-    <td width="33%" align="center">
-      <img src="https://github.com/user-attachments/assets/f82dd319-69f0-4585-97df-799bed5d2948" width="260">
     </td>
   </tr>
 </table>

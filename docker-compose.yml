@@ -8,6 +8,7 @@ services:
     ports:
       - "9011:9011"
       - "9088:9088"
+      - "9010:9010"
 
   admin:
     image: nanssye/xbot

@@ -230,3 +230,4 @@ admin/bot_status.json
 admin/bot_instance_status.txt
 database/*.db
 849/redis/dump.rdb
+/files/

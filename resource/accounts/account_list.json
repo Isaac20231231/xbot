@@ -1,4 +1,14 @@
 {
-  "accounts": [],
-  "current": ""
+  "accounts": [
+    {
+      "wxid": "wxid_q3p6guhhoet022",
+      "nickname": "小宝",
+      "alias": "isaac1999",
+      "avatar_url": "",
+      "device_name": "Emma Phillips's Pad",
+      "last_login": 1753167271.0103118,
+      "file_name": "wxid_q3p6guhhoet022/account.json"
+    }
+  ],
+  "current": "wxid_q3p6guhhoet022"
 }

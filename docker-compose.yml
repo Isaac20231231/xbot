@@ -9,6 +9,8 @@ services:
       - "9011:9011"
       - "9088:9088"
       - "9010:9010"
+    networks:
+      - xbot-network
 
   admin:
     image: nanssye/xbot
@@ -17,12 +19,10 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - xbot:/app
+      - .:/app
+    networks:
+      - xbot-network
 
 networks:
   xbot-network:
     driver: bridge
-
-volumes:
-  xbot:
-    name: xbot

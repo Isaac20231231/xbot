@@ -126,6 +126,18 @@ class CallbackConfig:
 
 
 @dataclass
+class MessageQueueConfig:
+    """消息队列配置"""
+
+    enabled: bool = False
+    host: str = "localhost"
+    port: int = 5672
+    queue: str = "message_queue"
+    username: str = "guest"
+    password: str = "guest"
+
+
+@dataclass
 class LoggingConfig:
     """日志系统配置"""
 
@@ -161,6 +173,7 @@ class AppConfig:
     auto_restart: AutoRestartConfig = field(default_factory=AutoRestartConfig)
     notification: NotificationConfig = field(default_factory=NotificationConfig)
     callback: CallbackConfig = field(default_factory=CallbackConfig)
+    message_queue: MessageQueueConfig = field(default_factory=MessageQueueConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     performance: PerformanceConfig = field(default_factory=PerformanceConfig)
 
@@ -438,6 +451,18 @@ class ConfigManager:
                 path=callback_config.get("path", config.callback.path),
                 delay=callback_config.get("delay", config.callback.delay),
                 mode=callback_config.get("mode", config.callback.mode),
+            )
+
+        # 消息队列配置
+        if "MessageQueue" in self._raw_config:
+            mq_config = self._raw_config["MessageQueue"]
+            config.message_queue = MessageQueueConfig(
+                enabled=mq_config.get("enabled", config.message_queue.enabled),
+                host=mq_config.get("host", config.message_queue.host),
+                port=mq_config.get("port", config.message_queue.port),
+                queue=mq_config.get("queue", config.message_queue.queue),
+                username=mq_config.get("username", config.message_queue.username),
+                password=mq_config.get("password", config.message_queue.password),
             )
 
         # 日志配置

@@ -276,6 +276,53 @@ async def main():
     # 启动管理后台（提前启动）
     admin_server_thread = start_admin_server(config)
 
+    # 启动MQ监听器
+    global mq_listener
+    try:
+        # 检查MQ功能是否启用
+        if hasattr(app_config, 'message_queue'):
+            mq_config = app_config.message_queue
+        else:
+            # 兼容旧配置格式
+            mq_config = config.get("MessageQueue", {})
+            mq_config = type('obj', (object,), {
+                'enabled': mq_config.get("enabled", False),
+                'host': mq_config.get("host", "localhost"),
+                'port': mq_config.get("port", 5672),
+                'queue': mq_config.get("queue", "message_queue"),
+                'username': mq_config.get("username", "guest"),
+                'password': mq_config.get("password", "guest")
+            })()
+        
+        if mq_config.enabled:
+            logger.info("🔧 启动消息队列监听器...")
+            
+            # 导入MQ监听器
+            from mq_listener import MQListener
+            
+            # 创建配置字典
+            mq_listener_config = {
+                'rabbitmq_host': mq_config.host,
+                'rabbitmq_port': mq_config.port,
+                'rabbitmq_queue': mq_config.queue,
+                'rabbitmq_user': mq_config.username,
+                'rabbitmq_password': mq_config.password
+            }
+            
+            # 创建并启动MQ监听器
+            mq_listener = MQListener(mq_listener_config)
+            mq_listener.start()
+            
+            logger.success(f"✅ MQ监听器已启动: {mq_listener_config['rabbitmq_host']}:{mq_listener_config['rabbitmq_port']}")
+            logger.info(f"📨 监听队列: {mq_listener_config['rabbitmq_queue']}")
+        else:
+            logger.info("📭 MessageQueue功能未启用，跳过MQ监听器启动")
+    except Exception as e:
+        logger.error(f"❌ 启动MQ监听器失败: {e}")
+        logger.error("🔍 请检查RabbitMQ服务是否正常运行")
+        # MQ启动失败不应该阻止主程序继续运行
+        mq_listener = None
+
     # 启动 MCP 能力中心（自动集成）
     try:
         mcp_dir = os.path.join(os.path.dirname(__file__), "mcp_server")
@@ -359,13 +406,25 @@ async def main():
             cleanup()
 
 
-# 定义全局变量来存储linuxService进程
+# 定义全局变量来存储linuxService进程和MQ监听器
 # 在程序退出时关闭该进程
 linux_service_process = None
+mq_listener = None
 
 # 清理函数，在程序退出时调用
 def cleanup():
-    global linux_service_process
+    global linux_service_process, mq_listener
+    
+    # 关闭MQ监听器
+    if mq_listener is not None:
+        try:
+            logger.info("正在关闭 MQ 监听器...")
+            mq_listener.stop()
+            logger.success("MQ 监听器已关闭")
+        except Exception as e:
+            logger.error("MQ 监听器关闭失败: {}", e)
+    
+    # 关闭linuxService进程
     if linux_service_process is not None:
         try:
             logger.info("正在关闭 linuxService 进程...")

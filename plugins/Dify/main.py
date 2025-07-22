@@ -826,15 +826,6 @@ class Dify(PluginBase):
         quote_info = message.get("Quote", {})
         quoted_content = quote_info.get("Content", "")
         quoted_sender = quote_info.get("Nickname", "")
-        quoted_msg_type = quote_info.get("MsgType")
-        
-        # 特殊处理聊天记录类型消息，从destination字段获取实际内容
-        if quoted_msg_type == 49 and quote_info.get("XmlType") == 19:  # 聊天记录类型
-            destination = quote_info.get("destination", "")
-            if destination and destination != "":
-                # 使用destination字段替换quoted_content
-                quoted_content = f"聊天记录：{destination}"
-                logger.info(f"检测到聊天记录类型消息，从destination字段提取内容: {quoted_content[:100]}...")
 
         logger.info(f"处理引用消息: 内容={content}, 引用内容={quoted_content}, 引用发送者={quoted_sender}")
 
@@ -845,27 +836,12 @@ class Dify(PluginBase):
         if not image_md5 and quote_info.get("MsgType") == 3:  # 图片消息
             try:
                 # 尝试从引用的图片消息中提取MD5
-                if "<img" in quoted_content:
-                    # 先尝试标准XML解析
-                    try:
-                        if "<?xml" not in quoted_content:
-                            xml_to_parse = f"<?xml version='1.0'?><root>{quoted_content}</root>"
-                            root = ET.fromstring(xml_to_parse)
-                            img_element = root.find('img')
-                        else:
-                            root = ET.fromstring(quoted_content)
-                            img_element = root.find('img')
-                        if img_element is not None:
-                            image_md5 = img_element.get('md5')
-                            logger.info(f"从引用的图片消息中提取到MD5: {image_md5}")
-                    except Exception as e:
-                        logger.warning(f"标准XML解析失败，尝试正则提取MD5: {e}")
-                        # 正则兜底提取md5="..."
-                        import re
-                        match = re.search(r'md5=[\"\\']([0-9a-fA-F]{32})[\"\\']', quoted_content)
-                        if match:
-                            image_md5 = match.group(1)
-                            logger.info(f"正则兜底提取到MD5: {image_md5}")
+                if "<?xml" in quoted_content and "<img" in quoted_content:
+                    root = ET.fromstring(quoted_content)
+                    img_element = root.find('img')
+                    if img_element is not None:
+                        image_md5 = img_element.get('md5')
+                        logger.info(f"从引用的图片消息中提取到MD5: {image_md5}")
             except Exception as e:
                 logger.error(f"解析引用图片消息XML失败: {e}")
 
@@ -3086,7 +3062,8 @@ class Dify(PluginBase):
                 api_host = app_config.wechat_api.host
                 api_port = app_config.wechat_api.port
                 urls = [
-                    f'http://{api_host}:{api_port}/api/Tools/DownloadFile'
+                    f'http://{api_host}:{api_port}/api/Tools/DownloadFile',
+                    f'http://{api_host}:{api_port}/VXAPI/Tools/DownloadFile'
                 ]
 
                 download_success = False

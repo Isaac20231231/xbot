@@ -231,3 +231,5 @@ admin/bot_instance_status.txt
 database/*.db
 849/redis/dump.rdb
 /files/
+/chat_history.db
+*.txt
